@@ -1,0 +1,55 @@
+workflows:
+  ios-release:
+    name: iOS Release
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
+    environment:
+      groups:
+        - appstore_credentials
+        - firebase_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: io.veloxion.app
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+      - name: Restore Firebase iOS config
+        script: |
+          if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > GoogleService-Info.plist
+          else
+            echo "GOOGLE_SERVICE_INFO_PLIST is not set"
+            exit 1
+          fi
+      - name: Sync Capacitor iOS
+        script: |
+          npm run sync:ios
+      - name: Apply iOS code signing
+        script: |
+          xcode-project use-profiles
+      - name: Build iOS IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
