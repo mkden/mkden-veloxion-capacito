@@ -3,15 +3,15 @@ workflows:
     name: iOS Release
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: veloxion-appstore
     environment:
       groups:
+        - appstore_credentials
         - firebase_credentials
       ios_signing:
         distribution_type: app_store
         bundle_identifier: io.veloxion.app
       vars:
+        BUNDLE_ID: "io.veloxion.app"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
     triggering:
@@ -36,6 +36,17 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npm run sync:ios
+      - name: Set up keychain
+        script: |
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
       - name: Apply iOS code signing
         script: |
           xcode-project use-profiles
