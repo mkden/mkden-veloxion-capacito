@@ -1,0 +1,39 @@
+{
+  "name": "veloxion-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Veloxion AI mobile applications for Android and iOS",
+  "scripts": {
+    "sync": "cap sync && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-ios-firebase.ps1",
+    "sync:android": "cap sync android",
+    "sync:ios": "cap sync ios && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-ios-firebase.ps1",
+    "open:android": "cap open android",
+    "open:ios": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-ios-firebase.ps1 && cap open ios",
+    "build:android": "npm run build:android:release",
+    "build:android:unsigned": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Configuration Release",
+    "build:android:release": "npm run build:android:unsigned && npm run sign:android:release",
+    "build:android:debug": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Configuration Debug",
+    "sign:android:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sign-android-release.ps1",
+    "build:android:installable": "npm run build:android:release",
+    "assets": "capacitor-assets generate --iconBackgroundColor #edf5f9 --iconBackgroundColorDark #edf5f9 --splashBackgroundColor #edf5f9 --splashBackgroundColorDark #edf5f9 --logoSplashScale 0.32"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/app": "8.0.0",
+    "@capacitor/browser": "8.0.0",
+    "@capacitor/core": "8.4.2",
+    "@capacitor/ios": "8.4.2",
+    "@capacitor/keyboard": "8.0.0",
+    "@capacitor/push-notifications": "8.0.0",
+    "@capacitor/splash-screen": "8.0.0",
+    "@capacitor/status-bar": "8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.4.2",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
