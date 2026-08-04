@@ -30,8 +30,7 @@ workflows:
           if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
             printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > GoogleService-Info.plist
           else
-            echo "GOOGLE_SERVICE_INFO_PLIST is not set"
-            exit 1
+            echo "GOOGLE_SERVICE_INFO_PLIST is not set, skipping iOS Firebase plist restore"
           fi
       - name: Sync Capacitor iOS
         script: |
