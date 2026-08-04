@@ -1,8 +1,11 @@
 $ErrorActionPreference = "Stop"
 
 $buildTools = "E:\non\android-sdk\Sdk\build-tools\36.0.0"
-$releaseDirectory = "E:\ford\veloxion-capacitor-build\app\outputs\apk\release"
-$unsignedApk = Join-Path $releaseDirectory "app-release-unsigned.apk"
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$releaseDirectory = Join-Path $projectRoot "android\app\build\outputs\apk\release"
+$unsignedApk = Get-ChildItem -Path $releaseDirectory -Filter "*-unsigned.apk" -File -ErrorAction SilentlyContinue |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1 -ExpandProperty FullName
 $alignedApk = Join-Path $releaseDirectory "app-release-aligned.apk"
 $installableApk = Join-Path $releaseDirectory "veloxion-release-installable.apk"
 $debugKeystore = Join-Path $env:USERPROFILE ".android\debug.keystore"
