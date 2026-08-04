@@ -3,6 +3,8 @@ workflows:
     name: iOS Release
     max_build_duration: 120
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
     environment:
       groups:
         - appstore_credentials
@@ -57,4 +59,5 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
     publishing:
       app_store_connect:
+        auth: integration
         submit_to_testflight: true
