@@ -7,8 +7,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    private func configureBridgeWebView() {
+        guard let bridgeController = window?.rootViewController as? CAPBridgeViewController,
+              let webView = bridgeController.webView else { return }
+
+        webView.allowsBackForwardNavigationGestures = false
+        webView.scrollView.bounces = false
+        webView.scrollView.alwaysBounceVertical = false
+        webView.scrollView.alwaysBounceHorizontal = false
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.scrollView.contentInset = .zero
+        webView.scrollView.scrollIndicatorInsets = .zero
+        webView.scrollView.keyboardDismissMode = .interactive
+        webView.backgroundColor = UIColor(red: 0.93, green: 0.96, blue: 0.98, alpha: 1.0)
+        webView.isOpaque = false
+    }
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        DispatchQueue.main.async { [weak self] in
+            self?.configureBridgeWebView()
+        }
         return true
     }
 
@@ -27,9 +45,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        guard let bridgeController = window?.rootViewController as? CAPBridgeViewController else { return }
-        bridgeController.webView?.allowsBackForwardNavigationGestures = true
-        bridgeController.webView?.scrollView.keyboardDismissMode = .interactive
+        configureBridgeWebView()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
