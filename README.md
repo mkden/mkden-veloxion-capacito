@@ -35,6 +35,7 @@ Backend API внутри webview:
 
 1. В `capacitor/package.json` уже подключен `@capacitor/push-notifications`
 2. В iOS `AppDelegate.swift` уже добавлены callback-методы регистрации APNs
+3. Текущая iOS-схема push в проекте использует `APNs` через backend, а не обязательный Firebase Messaging SDK
 3. После изменения плагинов всегда выполняй:
 
 ```powershell
@@ -111,7 +112,7 @@ npm run open:android
 
 ## iOS push setup
 
-Положи Firebase-конфиг iOS в корень `capacitor`:
+Если нужен именно Firebase SDK / FCM на iOS, положи конфиг в корень `capacitor`:
 
 ```text
 GoogleService-Info.plist
@@ -125,6 +126,10 @@ npm run sync:ios
 
 Скрипт сам скопирует файл в `ios/App/App/GoogleService-Info.plist`, и Xcode target
 подхватит его как resource.
+
+Если Firebase на iOS не используется, а push идут через APNs от backend, файл
+`GoogleService-Info.plist` для рабочего iOS push не обязателен. В Codemagic для
+CI-сборки добавлен fallback-пустой plist, чтобы Xcode не падал на missing input file.
 
 Открой проект в Xcode и включи capability:
 
@@ -142,10 +147,32 @@ npm run sync:ios
 
 ### Важно по iOS
 
-- без `GoogleService-Info.plist` Firebase iOS SDK и FCM не инициализируются
+- без `GoogleService-Info.plist` не инициализируются только Firebase iOS SDK / FCM
 - без включенной capability APNS token не придёт
 - сборка и подпись iOS делаются только на macOS
 - для production нужен рабочий `.p8` ключ из Apple Developer
+- факт успешной IPA-сборки сам по себе не гарантирует рабочий push; нужен тест на реальном iPhone
+
+## Codemagic iOS build
+
+Сейчас `codemagic.yaml` настроен на сборку `ios-release` из ветки `main`.
+
+Что уже учтено:
+
+- используется `xcode-project build-ipa`
+- signing берётся из `Codemagic managed signing`
+- `npx cap sync ios` вызывается напрямую, без Windows PowerShell
+- при отсутствии `GOOGLE_SERVICE_INFO_PLIST` CI не падает
+- если Xcode target ждёт `GoogleService-Info.plist`, workflow создаёт fallback-пустышку
+
+Что должно быть настроено в Codemagic:
+
+- iOS certificate / provisioning profile для `io.veloxion.app`
+- App Store Connect API key для signing
+- при необходимости env group `firebase_credentials`
+
+Если build падает уже после `Apply iOS code signing`, значит нужно смотреть конкретный
+Xcode log, а не только статус signing.
 
 Локальная Android-сборка использует:
 
@@ -268,6 +295,11 @@ GET /api/push/tokens/:id_user
 
 - `fcm` для Android
 - `apns` для iOS
+
+Важно:
+
+- успешная сборка IPA не означает, что iOS push уже точно работает
+- для финальной проверки нужен реальный iPhone, разрешение на уведомления и тестовая отправка с backend
 
 Дополнительно для полной проверки:
 

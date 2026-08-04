@@ -48,6 +48,44 @@ workflows:
       - name: Apply iOS code signing
         script: |
           xcode-project use-profiles
+      - name: Set iOS build number
+        script: |
+          python3 - <<'PY'
+          import os
+          import re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          project = Path("ios/App/App.xcodeproj/project.pbxproj")
+          plist = Path("ios/App/App/Info.plist")
+
+          build_number = os.environ.get("IOS_BUILD_NUMBER")
+          if not build_number:
+              build_number = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
+
+          project_text = project.read_text(encoding="utf-8")
+          project_text, project_replacements = re.subn(
+              r"CURRENT_PROJECT_VERSION = \d+;",
+              f"CURRENT_PROJECT_VERSION = {build_number};",
+              project_text,
+          )
+          project.write_text(project_text, encoding="utf-8")
+
+          plist_text = plist.read_text(encoding="utf-8")
+          plist_text, plist_replacements = re.subn(
+              r"<key>CFBundleVersion</key>\s*<string>.*?</string>",
+              f"<key>CFBundleVersion</key>\n\t<string>{build_number}</string>",
+              plist_text,
+              count=1,
+              flags=re.S,
+          )
+          plist.write_text(plist_text, encoding="utf-8")
+
+          print(
+              f"Set iOS build number to {build_number} "
+              f"(project: {project_replacements}, plist: {plist_replacements})"
+          )
+          PY
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
