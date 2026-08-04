@@ -179,11 +179,12 @@ Xcode log, а не только статус signing.
 ```text
 JDK:          C:\Program Files\Java\jdk-22
 Android SDK:  E:\non\android-sdk\Sdk
-Gradle cache: E:\ford\.gradle-veloxion
-Build output: E:\ford\veloxion-capacitor-build
+Gradle cache: .\gradle-user
+Build output: android\app\build\outputs\apk\
 ```
 
-Кэш и результаты вынесены на диск `E:`, чтобы не занимать системный диск.
+Сборка теперь идет локально внутри проекта, без внешних build-папок и без привязки
+к `E:\ford`.
 
 ## Android release
 
@@ -202,7 +203,7 @@ npm run build:android:release
 Готовый устанавливаемый APK:
 
 ```text
-E:\ford\veloxion-capacitor-build\app\outputs\apk\release\veloxion-release-installable.apk
+android\app\build\outputs\apk\release\veloxion-release-installable.apk
 ```
 
 После подписи промежуточные `app-release-unsigned.apk` и
@@ -217,9 +218,94 @@ npm run sign:android:release
 npm run open:android
 ```
 
+Если нужна только чистая сборка unsigned APK без подписи:
+
+```powershell
+npm run build:android:unsigned
+```
+
 Release подписывается keystore из
 `%USERPROFILE%\.android\debug.keystore`. Для обновления установленного
 приложения необходимо использовать тот же keystore.
+
+### Что нужно, чтобы Android собирался без танцев
+
+1. Должен быть установлен `Node.js 22+`.
+2. Должен быть установлен `JDK 22` в:
+
+```text
+C:\Program Files\Java\jdk-22
+```
+
+3. Должен быть доступен Android SDK в:
+
+```text
+E:\non\android-sdk\Sdk
+```
+
+4. В проекте должны быть установлены зависимости:
+
+```powershell
+npm install
+```
+
+5. После изменения плагинов или нативных файлов запускается:
+
+```powershell
+npm run sync:android
+```
+
+Но обычная release-сборка сама делает `cap sync android`, поэтому в штатном
+сценарии достаточно одной команды:
+
+```powershell
+npm run build:android:release
+```
+
+### Как устроена текущая Android-сборка
+
+- используется локальный Gradle cache: `.\gradle-user`
+- Gradle запускается прямо из `android\gradlew.bat`
+- release APK собирается в стандартную папку Android Gradle
+- затем скрипт автоматически:
+  - находит свежий `*-unsigned.apk`
+  - делает `zipalign`
+  - подписывает APK через `apksigner`
+  - проверяет подпись
+
+Отдельный helper-скрипт:
+
+```text
+tools\run-gradle-on-e.js
+```
+
+делает тот же подход, что и в соседнем проекте `non`: локальный `GRADLE_USER_HOME`
+внутри проекта и запуск Gradle без внешних временных build-каталогов.
+
+### Где лежит итоговый файл
+
+После успешной сборки:
+
+```text
+android\app\build\outputs\apk\release\veloxion-release-installable.apk
+```
+
+Именно этот файл нужно:
+
+- ставить на Android-устройство
+- загружать на сайт для скачивания
+- отдавать тестировщикам
+
+### Частые причины, если сборка не идет
+
+- стоит `JDK 17`, а не `JDK 22`
+- не найден `Android SDK` по пути `E:\non\android-sdk\Sdk`
+- не выполнен `npm install`
+- менялись плагины, но не был сделан `cap sync`
+- у установленной на устройстве старой версии другой keystore
+
+Если приложение не обновляется поверх старой сборки, обычно проблема в подписи:
+нужно ставить APK, подписанный тем же keystore.
 
 ## Логотип и splash
 
@@ -315,7 +401,7 @@ GET /api/admin/push/history
 
 ```powershell
 E:\non\android-sdk\Sdk\build-tools\36.0.0\apksigner.bat verify --verbose `
-  E:\ford\veloxion-capacitor-build\app\outputs\apk\release\veloxion-release-installable.apk
+  android\app\build\outputs\apk\release\veloxion-release-installable.apk
 ```
 
 Ожидаемый результат: APK Signature Scheme v2/v3 подтверждена.
