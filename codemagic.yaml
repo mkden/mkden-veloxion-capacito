@@ -35,6 +35,15 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+          if [ ! -f "ios/App/App/GoogleService-Info.plist" ]; then
+            cat > ios/App/App/GoogleService-Info.plist <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict/>
+</plist>
+EOF
+          fi
       - name: Apply iOS code signing
         script: |
           xcode-project use-profiles
