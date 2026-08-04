@@ -34,7 +34,7 @@ workflows:
           fi
       - name: Sync Capacitor iOS
         script: |
-          npm run sync:ios
+          npx cap sync ios
       - name: Set up keychain
         script: |
           keychain initialize
