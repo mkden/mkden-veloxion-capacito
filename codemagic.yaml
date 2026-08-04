@@ -55,3 +55,6 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+    publishing:
+      app_store_connect:
+        submit_to_testflight: true
