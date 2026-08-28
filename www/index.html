@@ -6,19 +6,99 @@
     <meta name="theme-color" content="#edf5f9" />
     <title>Veloxion AI</title>
     <style>
-      html, body { height: 100%; margin: 0; }
-      body { display: grid; place-items: center; background: #edf5f9; color: #152033; font: 16px system-ui, sans-serif; }
-      main { width: min(88vw, 360px); text-align: center; }
-      img { width: 88px; height: 88px; object-fit: contain; border-radius: 20px; }
-      p { margin: 18px 0 0; line-height: 1.45; color: #526277; }
-      a { display: inline-flex; margin-top: 20px; padding: 12px 20px; border-radius: 10px; background: #6269e8; color: white; text-decoration: none; }
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; margin: 0; }
+      body {
+        min-height: 100svh;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 14% 12%, rgba(31, 188, 231, .2), transparent 28%),
+          radial-gradient(circle at 88% 86%, rgba(203, 56, 177, .16), transparent 32%),
+          #edf5f9;
+        color: #14233a;
+        font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+      }
+      main {
+        position: relative;
+        display: grid;
+        min-height: 100svh;
+        place-items: center;
+        padding: 28px;
+        text-align: center;
+      }
+      .content { width: min(100%, 360px); }
+      .brand { display: inline-flex; align-items: center; gap: 10px; color: #60718a; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+      .logo { width: 54px; height: 54px; border-radius: 16px; object-fit: contain; box-shadow: 0 14px 32px rgba(50, 96, 128, .18); }
+      .signal {
+        display: grid;
+        width: 112px;
+        height: 112px;
+        margin: 38px auto 26px;
+        place-items: center;
+        border: 1px solid rgba(120, 184, 213, .65);
+        border-radius: 36px;
+        background: rgba(255, 255, 255, .68);
+        box-shadow: inset 0 1px rgba(255, 255, 255, .9), 0 20px 48px rgba(58, 102, 135, .13);
+      }
+      .signal svg { width: 54px; height: 54px; color: #6670e8; }
+      h1 { margin: 0; font-size: clamp(28px, 8vw, 36px); letter-spacing: -.045em; line-height: 1.04; }
+      p { margin: 15px auto 0; max-width: 310px; color: #60718a; font-size: 16px; line-height: 1.55; }
+      button {
+        display: inline-flex;
+        min-width: 190px;
+        min-height: 52px;
+        margin-top: 30px;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: 0;
+        border-radius: 17px;
+        background: linear-gradient(135deg, #1db8e8, #6670ed 54%, #cc39b5);
+        box-shadow: 0 15px 30px rgba(91, 83, 214, .26);
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-size: 16px;
+        font-weight: 750;
+      }
+      button:active { transform: scale(.98); }
+      button:disabled { cursor: wait; opacity: .75; }
+      .note { margin-top: 18px; color: #90a0b3; font-size: 12px; }
+      .pulse { animation: pulse 2.2s ease-in-out infinite; transform-origin: center; }
+      @keyframes pulse { 50% { opacity: .42; transform: scale(.93); } }
     </style>
   </head>
   <body>
     <main>
-      <img src="veloxion-logo.png" alt="Veloxion AI" />
-      <p>Не удалось подключиться к Veloxion. Проверьте интернет-соединение.</p>
-      <a href="https://veloxion.io/lk">Повторить</a>
+      <section class="content" aria-live="polite">
+        <div class="brand"><img class="logo" src="veloxion-logo.png" alt="Veloxion AI" /> Veloxion AI</div>
+        <div class="signal" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4">
+            <path class="pulse" d="M12 25a29 29 0 0 1 40 0" />
+            <path d="M20 34a18 18 0 0 1 24 0" />
+            <path d="M28 43a7 7 0 0 1 8 0" />
+            <circle cx="32" cy="51" r="2" fill="currentColor" stroke="none" />
+          </svg>
+        </div>
+        <h1>Нет соединения</h1>
+        <p id="message">Проверьте интернет и попробуйте подключиться снова.</p>
+        <button id="retry" type="button">↻&nbsp; Обновить</button>
+        <div class="note">Ваши данные в аккаунте останутся в сохранности.</div>
+      </section>
     </main>
+    <script>
+      const appUrl = "https://veloxion.io/lk";
+      const retryButton = document.getElementById("retry");
+      const message = document.getElementById("message");
+      function retry() {
+        retryButton.disabled = true;
+        retryButton.textContent = "Проверяем соединение...";
+        message.textContent = "Пытаемся снова подключиться к Veloxion.";
+        window.location.replace(appUrl);
+      }
+      retryButton.addEventListener("click", retry);
+      window.addEventListener("online", () => setTimeout(retry, 250), { once: true });
+    </script>
   </body>
 </html>

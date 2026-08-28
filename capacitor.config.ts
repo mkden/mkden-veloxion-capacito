@@ -6,6 +6,7 @@ const config: CapacitorConfig = {
   webDir: "www",
   server: {
     url: "https://veloxion.io/lk",
+    errorPath: "index.html",
     cleartext: false,
     allowNavigation: ["veloxion.io", "*.veloxion.io", "api.veloxion.io", "*.api.veloxion.io"]
   },
