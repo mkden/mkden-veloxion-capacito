@@ -7,6 +7,14 @@ Capacitor-оболочка личного кабинета Veloxion AI для An
 - Название: `Veloxion AI`
 - Android: min API 24, target API 36
 
+## Отдельное приложение EURO
+
+Конфигурация `euro`: `Veloxion AI Europe`, Bundle ID `eu.veloxion.app`,
+сайт `https://veloxion.eu/lk`. По умолчанию по-прежнему собирается RUS.
+Отдельные workflows `ios-euro-bootstrap` и `ios-euro-validation` не публикуют
+приложение автоматически. Статус, ограничения оплаты/пушей и инструкция:
+[docs/euro-ios-app.md](docs/euro-ios-app.md).
+
 ## Подготовка
 
 ```powershell

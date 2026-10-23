@@ -1,14 +1,21 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import regions from "./app-regions.json";
+
+const regionName = process.env.VELOXION_APP_REGION || "rus";
+if (regionName !== "rus" && regionName !== "euro") {
+  throw new Error("VELOXION_APP_REGION must be rus or euro");
+}
+const region = regions[regionName];
 
 const config: CapacitorConfig = {
-  appId: "io.veloxion.app",
-  appName: "Veloxion AI",
+  appId: region.appId,
+  appName: region.appName,
   webDir: "www",
   server: {
-    url: "https://veloxion.io/lk",
+    url: region.url,
     errorPath: "index.html",
     cleartext: false,
-    allowNavigation: ["veloxion.io", "*.veloxion.io", "api.veloxion.io", "*.api.veloxion.io"]
+    allowNavigation: region.allowNavigation
   },
   android: {
     allowMixedContent: false,

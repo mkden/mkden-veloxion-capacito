@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-veloxion-region="rus">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -88,13 +88,21 @@
       </section>
     </main>
     <script>
-      const appUrl = "https://veloxion.io/lk";
+      const isEuro = document.documentElement.dataset.veloxionRegion === "euro";
+      const appUrl = isEuro ? "https://veloxion.eu/lk" : "https://veloxion.io/lk";
       const retryButton = document.getElementById("retry");
       const message = document.getElementById("message");
+      if (isEuro) {
+        document.documentElement.lang = "en";
+        document.querySelector("h1").textContent = "No connection";
+        message.textContent = "Check your internet connection and try again.";
+        retryButton.textContent = "Retry";
+        document.querySelector(".note").textContent = "Your account data is safe.";
+      }
       function retry() {
         retryButton.disabled = true;
-        retryButton.textContent = "Проверяем соединение...";
-        message.textContent = "Пытаемся снова подключиться к Veloxion.";
+        retryButton.textContent = isEuro ? "Connecting..." : "Проверяем соединение...";
+        message.textContent = isEuro ? "Reconnecting to Veloxion." : "Пытаемся снова подключиться к Veloxion.";
         window.location.replace(appUrl);
       }
       retryButton.addEventListener("click", retry);

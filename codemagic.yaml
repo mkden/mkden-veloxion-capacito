@@ -1,4 +1,61 @@
 workflows:
+  ios-euro-bootstrap:
+    name: EURO Bundle ID and Capabilities (No Publishing)
+    max_build_duration: 20
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
+    environment:
+      node: 22
+      groups:
+        - appstore_credentials
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: feature/ios-euro-app
+          include: true
+          source: true
+    scripts:
+      - name: Verify region isolation and API guards
+        script: node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs
+      - name: Register EURO identifier and capabilities only
+        script: node scripts/app-store-euro-bootstrap.mjs --apply-bundle --output build/euro-bootstrap/report.json
+    artifacts:
+      - build/euro-bootstrap/*.json
+  ios-euro-validation:
+    name: Veloxion AI Europe - Signed Validation (No Publishing)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
+    environment:
+      node: 22
+      groups:
+        - appstore_credentials
+      vars:
+        VELOXION_APP_REGION: euro
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: eu.veloxion.app
+    scripts:
+      - name: Install and verify isolated EURO configuration
+        script: |
+          npm ci
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs
+          node scripts/prepare-ios-region.mjs euro
+          npx cap sync ios
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict/></plist>' > ios/App/App/GoogleService-Info.plist
+      - name: Sign and build EURO only
+        script: |
+          xcode-project use-profiles
+          cd ios/App
+          agvtool new-version -all "$(date -u +%Y%m%d%H%M)"
+          cd ../..
+          xcode-project build-ipa --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
   ios-iap-setup:
     name: App Store IAP Draft Setup (No Prices or Publishing)
     max_build_duration: 20
@@ -46,6 +103,7 @@ workflows:
         script: node scripts/app-store-audit.mjs || echo "App Store metadata needs a separate permissions/configuration check."
       - name: Restore Firebase and sync iOS
         script: |
+          node scripts/prepare-ios-region.mjs rus
           if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
             printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > GoogleService-Info.plist
           fi
@@ -100,6 +158,7 @@ workflows:
           fi
       - name: Sync Capacitor iOS
         script: |
+          node scripts/prepare-ios-region.mjs rus
           npx cap sync ios
           if [ ! -f "ios/App/App/GoogleService-Info.plist" ]; then
             printf '%s\n' \

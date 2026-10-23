@@ -1,0 +1,14 @@
+{
+  "rus": {
+    "appId": "io.veloxion.app",
+    "appName": "Veloxion AI",
+    "url": "https://veloxion.io/lk",
+    "allowNavigation": ["veloxion.io", "*.veloxion.io", "api.veloxion.io", "*.api.veloxion.io"]
+  },
+  "euro": {
+    "appId": "eu.veloxion.app",
+    "appName": "Veloxion AI Europe",
+    "url": "https://veloxion.eu/lk",
+    "allowNavigation": ["veloxion.eu", "www.veloxion.eu", "api.veloxion.eu"]
+  }
+}

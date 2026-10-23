@@ -120,6 +120,23 @@ test('read-only client rejects all writes and errors do not leak Apple response 
   await assert.rejects(client.request('/v1/apps'), error => error instanceof AppStoreError && error.status === 403 && !error.message.includes('SECRET_RESPONSE_BODY'));
 });
 
+test('EURO bootstrap cannot enable capabilities on a foreign or unverified Bundle ID', async () => {
+  const writes = [];
+  const client = createClient({ credentials, allowEuroBundle: true, fetchImpl: async (url, options) => {
+    if (options.method === 'GET') return json({ data: [{ type: 'bundleIds', id: 'EU-RESOURCE', attributes: { identifier: 'eu.veloxion.app', platform: 'IOS' } }] });
+    writes.push(url);
+    return json({ data: {} });
+  } });
+  const capability = id => ({ method: 'POST', body: { data: { type: 'bundleIdCapabilities', attributes: { capabilityType: 'PUSH_NOTIFICATIONS' }, relationships: { bundleId: { data: { type: 'bundleIds', id } } } } } });
+  await assert.rejects(client.request('/v1/bundleIdCapabilities', capability('EU-RESOURCE')), /not authorized/);
+  await client.list('/v1/bundleIds?filter[identifier]=eu.veloxion.app');
+  await assert.rejects(client.request('/v1/bundleIdCapabilities', capability('RUS-RESOURCE')), /not authorized/);
+  await client.request('/v1/bundleIdCapabilities', capability('EU-RESOURCE'));
+  assert.equal(writes.length, 1);
+  await assert.rejects(client.request('/v1/bundleIds', { method: 'POST', body: { data: { type: 'bundleIds', attributes: { identifier: 'io.veloxion.app', platform: 'IOS', name: 'Wrong' } } } }), /not authorized/);
+  await assert.rejects(client.request('/v1/certificates/123', { method: 'DELETE' }), /not authorized/);
+});
+
 test('read-only audit plans six consumables without making writes', async () => {
   const fixture = appleFixture();
   const report = await configureAppStore(fixture.client);

@@ -15,13 +15,22 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
     private var updatesTask: Task<Void, Never>?
     private var purchaseInProgress = false
+    private var productPrefix: String { (Bundle.main.bundleIdentifier ?? "") + "." }
+
+    private var trustedHosts: Set<String> {
+        switch Bundle.main.bundleIdentifier {
+        case "io.veloxion.app": return ["veloxion.io", "www.veloxion.io"]
+        case "eu.veloxion.app": return ["veloxion.eu", "www.veloxion.eu"]
+        default: return []
+        }
+    }
 
     public override func load() {
         updatesTask = Task { [weak self] in
             for await result in Transaction.updates {
                 guard let self = self else { return }
                 guard case .verified(let transaction) = result else { continue }
-                guard transaction.productType == .consumable else { continue }
+                guard transaction.productType == .consumable, transaction.productID.hasPrefix(self.productPrefix) else { continue }
                 await MainActor.run {
                     guard self.trustedOrigin else { return }
                     self.notifyListeners("transactionUpdated", data: self.payload(result, transaction), retainUntilConsumed: true)
@@ -34,7 +43,7 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private var trustedOrigin: Bool {
         guard let url = bridge?.webView?.url else { return false }
-        return url.scheme == "https" && ["veloxion.io", "www.veloxion.io"].contains(url.host?.lowercased() ?? "")
+        return url.scheme == "https" && trustedHosts.contains(url.host?.lowercased() ?? "")
     }
 
     private func requireOrigin(_ call: CAPPluginCall) -> Bool {
@@ -58,7 +67,7 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
             guard requireOrigin(call) else { return }
             let ids = call.getArray("productIds", String.self) ?? []
             guard !ids.isEmpty, ids.count <= 32,
-                  ids.allSatisfy({ $0.hasPrefix("io.veloxion.app.") && $0.count <= 190 }) else {
+                  ids.allSatisfy({ $0.hasPrefix(productPrefix) && $0.count <= 190 }) else {
                 call.reject("Invalid App Store product identifiers.", "INVALID_PRODUCTS")
                 return
             }
@@ -76,7 +85,7 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
         Task { @MainActor in
             guard requireOrigin(call) else { return }
             guard !purchaseInProgress else { call.reject("A purchase is already in progress.", "PURCHASE_BUSY"); return }
-            guard let id = call.getString("productId"), id.hasPrefix("io.veloxion.app."),
+            guard let id = call.getString("productId"), id.hasPrefix(productPrefix),
                   let rawToken = call.getString("appAccountToken"), let token = UUID(uuidString: rawToken) else {
                 call.reject("An authenticated purchase request is required.", "INVALID_PURCHASE")
                 return
@@ -113,7 +122,8 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
             guard requireOrigin(call) else { return }
             var transactions: [[String: Any]] = []
             for await result in Transaction.unfinished {
-                guard case .verified(let transaction) = result, transaction.productType == .consumable else { continue }
+                guard case .verified(let transaction) = result, transaction.productType == .consumable,
+                      transaction.productID.hasPrefix(productPrefix) else { continue }
                 transactions.append(payload(result, transaction))
             }
             call.resolve(["transactions": transactions])
@@ -128,7 +138,8 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
             for await result in Transaction.unfinished {
-                guard case .verified(let transaction) = result, transaction.id == id, transaction.productType == .consumable else { continue }
+                guard case .verified(let transaction) = result, transaction.id == id, transaction.productType == .consumable,
+                      transaction.productID.hasPrefix(productPrefix) else { continue }
                 await transaction.finish()
                 break
             }

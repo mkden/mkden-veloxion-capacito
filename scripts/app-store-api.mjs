@@ -58,15 +58,29 @@ function checkWrite(method, url, body) {
   throw new AppStoreError('Write refused: only consumable drafts, localizations and notification URLs are allowed. Pricing, availability, deletion and submission are forbidden.');
 }
 
-export function createClient({ credentials, fetchImpl = fetch, allowMetadata = false }) {
+export function createClient({ credentials, fetchImpl = fetch, allowMetadata = false, allowEuroBundle = false }) {
+  const euroBundleResources = new Set();
   async function request(path, { method = 'GET', body } = {}) {
     const url = new URL(path, ORIGIN);
     if (url.origin !== ORIGIN || url.username || url.password || url.hash || !/^\/v[12]\//.test(url.pathname)) {
       throw new AppStoreError('Refused to send Apple credentials outside the official App Store Connect API.');
     }
     if (method !== 'GET') {
-      if (!allowMetadata) throw new AppStoreError('Read-only mode: pass --apply-metadata to configure drafts.');
-      checkWrite(method, url, body);
+      const data = body?.data;
+      const euroBundleWrite = allowEuroBundle && method === 'POST' && (
+        (url.pathname === '/v1/bundleIds' && data?.type === 'bundleIds'
+          && data.attributes?.identifier === 'eu.veloxion.app' && data.attributes?.platform === 'IOS'
+          && Object.keys(data.attributes).every(key => ['identifier', 'platform', 'name'].includes(key)))
+        || (url.pathname === '/v1/bundleIdCapabilities' && data?.type === 'bundleIdCapabilities'
+          && ['PUSH_NOTIFICATIONS', 'IN_APP_PURCHASE'].includes(data.attributes?.capabilityType)
+          && Object.keys(data.attributes).every(key => key === 'capabilityType')
+          && data.relationships?.bundleId?.data?.type === 'bundleIds'
+          && euroBundleResources.has(data.relationships.bundleId.data.id))
+      );
+      if (!euroBundleWrite) {
+        if (!allowMetadata) throw new AppStoreError('Read-only mode: this operation is not authorized.');
+        checkWrite(method, url, body);
+      }
     }
     let response;
     try {
@@ -83,7 +97,14 @@ export function createClient({ credentials, fetchImpl = fetch, allowMetadata = f
         : response.status === 403 ? ' Check App Manager permissions and the Paid Apps Agreement.' : '';
       throw new AppStoreError(`App Store Connect HTTP ${response.status} (${method} ${url.pathname}).${hint}`, response.status);
     }
-    try { return await response.json(); } catch { throw new AppStoreError('App Store Connect returned an invalid JSON response.'); }
+    let payload;
+    try { payload = await response.json(); } catch { throw new AppStoreError('App Store Connect returned an invalid JSON response.'); }
+    const resources = Array.isArray(payload.data) ? payload.data : [payload.data];
+    for (const resource of resources) {
+      if (resource?.type === 'bundleIds' && resource.attributes?.identifier === 'eu.veloxion.app'
+        && ['IOS', 'UNIVERSAL'].includes(resource.attributes?.platform) && resource.id) euroBundleResources.add(resource.id);
+    }
+    return payload;
   }
   async function list(path) {
     const data = [];
