@@ -4,7 +4,7 @@ import { generateKeyPairSync, verify } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { AppStoreError, createClient, credentialsFromEnvironment, makeToken } from '../scripts/app-store-api.mjs';
-import { BUNDLE_ID, CATALOG, NOTIFICATIONS_URL, configureAppStore, notificationPatch } from '../scripts/app-store-setup.mjs';
+import { BUNDLE_ID, CATALOG, NOTIFICATIONS_URL, appStoreRegion, configureAppStore, notificationPatch } from '../scripts/app-store-setup.mjs';
 
 const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
 const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
@@ -22,8 +22,8 @@ test('all product metadata fits Apple character limits and never implies a sale 
   }
 });
 
-function appleFixture() {
-  const app = { type: 'apps', id: '1234567890', attributes: { bundleId: BUNDLE_ID } };
+function appleFixture(bundleId = BUNDLE_ID) {
+  const app = { type: 'apps', id: '1234567890', attributes: { bundleId } };
   const products = [];
   const versions = new Map();
   const localizations = new Map();
@@ -213,4 +213,17 @@ test('setup CI only runs on a dedicated branch and cannot publish an app', () =>
   assert.match(setup, /pattern: iap\/app-store-setup/);
   assert.match(setup, /--apply-metadata/);
   assert.doesNotMatch(setup, /publishing:|submit_to_|build-ipa|pattern: main/);
+});
+
+test('EURO setup uses EURO products, seven locales and its own notification endpoint', async () => {
+  const region = appStoreRegion('euro');
+  for (const item of region.catalog) for (const locale of item.localizations) { assert.ok(locale.name.length <= 30); assert.ok(locale.description.length <= 45); }
+  const fixture = appleFixture('eu.veloxion.app');
+  const result = await configureAppStore(fixture.client, { apply: true, region: 'euro' });
+  assert.equal(result.bundleId, 'eu.veloxion.app');
+  assert.ok(result.products.every(product => product.productId.startsWith('eu.veloxion.app.')));
+  assert.equal(fixture.writes.filter(write => write.path === '/v2/inAppPurchaseLocalizations').length, 42);
+  assert.equal(fixture.app.attributes.subscriptionStatusUrl, 'https://veloxion.eu/api/payments/apple/notifications');
+  assert.equal(result.pricesChanged, false);
+  assert.throws(() => appStoreRegion('china'), /region/);
 });

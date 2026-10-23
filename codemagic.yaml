@@ -1,4 +1,21 @@
 workflows:
+  ios-euro-iap-setup:
+    name: EURO App Store Products (No Prices or Publishing)
+    max_build_duration: 20
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
+    environment:
+      node: 22
+      groups:
+        - appstore_credentials
+    scripts:
+      - name: Verify setup automation
+        script: node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs
+      - name: Configure EURO consumable drafts and V2 notifications
+        script: node scripts/app-store-setup.mjs --region euro --apply-metadata --output build/euro-iap/report.json
+    artifacts:
+      - build/euro-iap/*.json
   ios-euro-bootstrap:
     name: EURO Bundle ID and Capabilities (No Publishing)
     max_build_duration: 20

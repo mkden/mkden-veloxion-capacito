@@ -50,7 +50,7 @@ export async function configureEuroBundle(client, { apply = false } = {}) {
       ...(apps.length ? [] : ['Create the app record on the App Store Connect website; Apple does not expose public app-creation REST API.']),
       'Prepare a EURO App Store provisioning profile and matching Codemagic distribution certificate; never revoke RUS certificates.',
       'Configure EURO APNs backend, EURO device-token registration and an authorized team/topic APNs key.',
-      'Port server-verified Apple IAP to EURO. Do not release with Stripe AI-credit checkout inside iOS.',
+      'Run ios-euro-iap-setup after the app card exists, approve retail prices and configure the numeric EURO app ID/test account. Never enable unconfigured payments.',
       'Build ios-euro-validation, test on iPhone, then submit only after explicit approval.',
     ],
   };

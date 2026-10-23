@@ -19,10 +19,19 @@ permission text and separate Codemagic workflows are prepared. Native purchases
 trust only the website associated with the signed bundle ID; EURO cannot request
 RUS product IDs and vice versa. Android remains unchanged.
 
-This is NOT a completed EURO payment/push integration. The EURO backend currently
-does not implement the RUS Apple IAP ledger or native APNs delivery/registration.
-Do not submit EURO with the existing Stripe AI-credit top-up flow inside iOS.
-An enabled In-App Purchase capability alone does not implement payments.
+The EURO frontend/backend now implement server-verified StoreKit purchases and
+native APNs registration/delivery. The wallet uses EUR cents, never RUB mappings.
+Native iOS hides and blocks the Stripe top-up action; website/Android checkout is
+unchanged. Actual Apple prices come from StoreKit, separately from EUR credits.
+Delivery, refunds and refund reversals are idempotent; Sandbox payments are marked
+as test payments and excluded from real revenue. APNs failures cannot undo a
+settled purchase. IAP and APNs remain disabled until Apple setup and device tests.
+
+The prepared six wallet packages are EUR 25, 50, 100, 250, 500 and 1000, matching
+the website presets. These are credited amounts, NOT assigned Apple retail prices.
+The catalog is editable in EURO admin settings under `payments.apple.products`.
+No signed EURO IPA, successful cloud provisioning, iPhone purchase or live push
+is claimed merely because local tests/builds pass.
 
 ## Apple and Codemagic Setup
 
@@ -47,17 +56,36 @@ An enabled In-App Purchase capability alone does not implement payments.
 4. Run **ios-euro-validation** on this branch. It builds an App Store-signed IPA
    but has no publishing stage. Do not merge into main to test: main retains the
    existing RUS TestFlight release workflow.
-5. Configure the EURO backend with its own `APNS_BUNDLE_ID=eu.veloxion.app` and
-   device-token storage. An APNs key may be reused only when its team, topic and
+5. Configure the EURO backend with its own `APNS_BUNDLE_ID=eu.veloxion.app`,
+   `APNS_P8_PATH`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_ENV=prod` (App Store and
+   TestFlight builds), and finally `APNS_ENABLED=1`. Store the private key outside
+   the website root, readable only by the backend owner. An APNs key may be reused
+   only when its team, topic and
    environment scope permits EURO. An App Store Connect API key is NOT an APNs
    key. Topic-specific RUS keys must not be blindly reused.
-6. Port and test server-verified Apple consumable purchases using EURO wallet
-   amounts and currency. Do not reuse RUB credit mappings, RUS purchase IDs or
-   RUS notification URLs. Confirm actual Apple price points before configuring
-   retail prices or enabling payments.
+6. After the EURO app card exists, run **ios-euro-iap-setup** on this branch. It
+   creates missing consumable drafts, seven metadata localizations and Apple V2
+   notification URLs at `https://veloxion.eu/api/payments/apple/notifications`.
+   Existing non-draft products and conflicting notification URLs are preserved
+   or rejected, not overwritten. The sanitized artifact reports the numeric app
+   ID to set as `payments.apple.app_id` in EURO admin settings. Select approved
+   retail price points/territories in Apple; verify agreements, tax and banking.
+   Add a dedicated EURO account ID to `payments.apple.sandbox_user_ids` and only
+   then enable `payments.apple.enabled` for device tests. Do not enable before
+   packages, prices, app ID and Sandbox account are ready.
 7. Test signed launch, auth, camera/gallery, offline recovery, purchase delivery,
    cancellation, duplicate proof protection and push on a real iPhone. Only then
    upload to TestFlight/App Review with explicit approval.
+
+`/admin/push` reports EURO APNs configuration without displaying secrets. Its test
+button targets only the authenticated administrator's registered iPhone. Ready
+generation, support reply and confirmed production top-up notifications are
+best-effort and deduplicated. They are not a durable delivery guarantee; APNs
+acceptance is not proof that a device displayed a message.
+
+The additive EURO migration is
+`euro/backend/sql/2026-10-23-apple-iap-native-push.sql`. Back up first; do not run
+it on RUS/CHINA. Existing balances, tariffs and payment settings are not replaced.
 
 ## Local Build Preparation
 
