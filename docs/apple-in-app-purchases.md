@@ -29,8 +29,10 @@ package amount only.
    application ID. Check product JSON and create matching products in ASC.
 3. Configure App Store Server Notifications V2 for production and sandbox:
    `https://api.veloxion.io/api/payments/apple/notifications`.
-4. Add **dedicated** test-user IDs to `payments.apple.sandbox_user_ids`.
+4. Add **dedicated** test/review-user IDs to `payments.apple.sandbox_user_ids`.
    Sandbox credits change only these test wallets and are excluded from revenue.
+   Give App Review a dedicated allowlisted demo account in review information:
+   App Review transactions also use Sandbox. Never provide production admin access.
 5. Complete Apple paid-app agreements, bank/tax details, product metadata and review
    screenshots. Enable `payments.apple.enabled` only when products are available.
 6. Test purchase, cancellation, pending, network loss after payment, relaunch

@@ -406,5 +406,13 @@ E:\non\android-sdk\Sdk\build-tools\36.0.0\apksigner.bat verify --verbose `
 
 Ожидаемый результат: APK Signature Scheme v2/v3 подтверждена.
 
+## iOS In-App Purchase
+
+Оплата цифровых AI-кредитов в iOS реализована через StoreKit 2, без Apple Pay/Stripe.
+Пакеты соответствуют суммам зачисления на сайте; цену показывает App Store.
+Настройка товаров, backend и проверки перед модерацией описаны в
+[инструкции IAP](docs/apple-in-app-purchases.md).
+Workflow `ios-iap-validation` создаёт тестовый IPA без публикации в App Store/TestFlight.
+
 Если Android сообщает, что пакет недействителен или приложение не обновляется,
 удалите старую сборку с другой подписью и установите актуальный подписанный APK.
