@@ -15,6 +15,7 @@ const config: CapacitorConfig = {
     backgroundColor: "#edf5f9"
   },
   ios: {
+    appendUserAgent: "VeloxionApp/iOS",
     backgroundColor: "#edf5f9",
     contentInset: "never",
     preferredContentMode: "mobile"
