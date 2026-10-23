@@ -53,3 +53,53 @@ for settlement and foreign-exchange accounting.
 `ios-iap-validation` builds an IPA but **does not publish**. Existing `ios-release`
 on main still publishes to TestFlight. Do not submit to App Review until server
 and products pass a real Sandbox test. No secrets belong in Git.
+
+## App Store Connect Automation
+
+`ios-iap-setup` runs only on pushes to the dedicated `iap/app-store-setup` branch.
+It uses the existing `veloxion-appstore` integration inside Codemagic; private
+keys are never exported to logs or artifacts. It does not build or publish an app.
+
+The workflow adds missing Consumable products, draft Russian/English metadata,
+and production/Sandbox notifications V2 URLs. Existing descriptions and reviewed
+versions are preserved. A conflicting product type or unrelated existing
+notification URL stops the preflight before writes. Re-running a completed setup
+does not duplicate products or localizations.
+
+Prices, territories, tax categories, bank details, agreements, screenshots and
+review submission are NOT changed. The script cannot enable backend payments.
+Wallet amounts are not guessed Apple retail prices. Read `remaining` in the report
+before considering the application ready for testing or review.
+
+Commands (Node 22+, no extra dependencies):
+
+```sh
+node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs
+node scripts/app-store-setup.mjs --plan
+node scripts/app-store-audit.mjs
+node scripts/app-store-setup.mjs --apply-metadata --output build/app-store-setup/report.json
+```
+
+Without `--apply-metadata`, API access is strictly read-only. `--plan` works
+offline, without credentials. Missing credentials, 401/403 and verification
+failures exit nonzero and produce a sanitized error, not a successful audit.
+The native-only validation workflow still treats its informational audit as
+non-blocking; only the separate setup workflow proves remote configuration.
+
+Codemagic supplies `APP_STORE_CONNECT_KEY_IDENTIFIER`,
+`APP_STORE_CONNECT_ISSUER_ID` and `APP_STORE_CONNECT_PRIVATE_KEY`. The helper accepts
+PEM, escaped PEM, JSON-quoted PEM or base64 PEM. For a protected local key file,
+`APP_STORE_CONNECT_PRIVATE_KEY_FILE` can replace the private-key value. Do not use
+an APNs key or put any private key in this repository.
+
+The report contains the numeric App Store app ID for
+`payments.apple.app_id`, verified draft product IDs and outstanding manual steps.
+It contains no secrets. A successful draft setup is NOT a successful purchase test.
+
+Official API references:
+
+- https://developer.apple.com/documentation/appstoreconnectapi/managing-in-app-purchases
+- https://developer.apple.com/documentation/appstoreconnectapi/working-with-in-app-purchase-versions
+- https://developer.apple.com/documentation/appstoreconnectapi/appupdaterequest/data-data.dictionary/attributes-data.dictionary
+- https://developer.apple.com/help/app-store-connect/reference/in-app-purchases-and-subscriptions/in-app-purchase-information
+- https://docs.codemagic.io/partials/code-signing-ios-configure-environment-vars/
