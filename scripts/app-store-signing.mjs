@@ -39,11 +39,12 @@ export function certificateMatches(resource, publicKeySha256, now = Date.now()) 
   } catch { return false; }
 }
 
-export function validateProfilePlist(plist, { teamId, prefix = teamId } = {}) {
+export function validateProfilePlist(plist, { teamId, prefix = teamId, bundleId = EURO_BUNDLE } = {}) {
   const string = key => new RegExp(`<key>\\s*${key}\\s*</key>\\s*<string>([^<]+)</string>`).exec(plist)?.[1];
   const team = /<key>\s*TeamIdentifier\s*<\/key>\s*<array>\s*<string>([^<]+)<\/string>/.exec(plist)?.[1];
   if (!/^[A-Z0-9]{10}$/.test(teamId || '') || !/^[A-Z0-9]{10}$/.test(prefix || '') || team !== teamId
-    || string('application-identifier') !== `${prefix}.${EURO_BUNDLE}` || string('aps-environment') !== 'production'
+    || !['eu.veloxion.app', 'io.veloxion.app'].includes(bundleId)
+    || string('application-identifier') !== `${prefix}.${bundleId}` || string('aps-environment') !== 'production'
     || !/<key>\s*get-task-allow\s*<\/key>\s*<false\s*\/>/.test(plist)
     || /<key>\s*ProvisionedDevices\s*<\/key>/.test(plist)
     || /<key>\s*ProvisionsAllDevices\s*<\/key>\s*<true\s*\/>/.test(plist)) {

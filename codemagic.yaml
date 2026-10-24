@@ -1,4 +1,89 @@
 workflows:
+  ios-euro-testflight:
+    name: EURO IPA - TestFlight Upload Only
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
+    environment:
+      node: 22
+      groups:
+        - appstore_credentials
+      vars:
+        VELOXION_APP_REGION: euro
+      # Import the existing team certificate; only the downloaded EURO profile is applied below.
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: io.veloxion.app
+    scripts:
+      - name: Install, test and prepare EURO
+        script: |
+          npm ci
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs
+          node scripts/prepare-ios-region.mjs euro
+          npx cap sync ios
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict/></plist>' > ios/App/App/GoogleService-Info.plist
+      - name: Verify EURO profile and allocate a new build number
+        script: node scripts/ci-testflight-prepare.mjs euro
+      - name: Sign only with the EURO profile and build
+        script: |
+          xcode-project use-profiles --project ios/App/App.xcodeproj --profile "$CM_BUILD_DIR/build/testflight/euro.mobileprovision"
+          xcode-project build-ipa --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" --scheme App
+          node scripts/verify-ios-ipa.mjs euro
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/testflight/*.json
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
+  ios-rus-testflight:
+    name: RUS IPA - TestFlight Upload Only
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: veloxion-appstore
+    environment:
+      node: 22
+      groups:
+        - appstore_credentials
+        - firebase_credentials
+      vars:
+        VELOXION_APP_REGION: rus
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: io.veloxion.app
+    scripts:
+      - name: Install, test and prepare RUS
+        script: |
+          npm ci
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs
+          node scripts/prepare-ios-region.mjs rus
+          if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > GoogleService-Info.plist
+          fi
+          npx cap sync ios
+          if [ ! -f ios/App/App/GoogleService-Info.plist ]; then
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict/></plist>' > ios/App/App/GoogleService-Info.plist
+          fi
+      - name: Verify RUS profile and allocate a new build number
+        script: node scripts/ci-testflight-prepare.mjs rus
+      - name: Sign only with the RUS profile and build
+        script: |
+          xcode-project use-profiles --project ios/App/App.xcodeproj --profile "$CM_BUILD_DIR/build/testflight/rus.mobileprovision"
+          xcode-project build-ipa --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" --scheme App
+          node scripts/verify-ios-ipa.mjs rus
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/testflight/*.json
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
   ios-euro-iap-setup:
     name: EURO App Store Products (No Prices or Publishing)
     max_build_duration: 20
