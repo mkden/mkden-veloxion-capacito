@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { generateKeyPairSync } from 'node:crypto';
+import { copyInternalTesters } from '../scripts/app-store-testflight.mjs';
 import { APPS, nextBuildNumber, installProvisioningProfile } from '../scripts/ci-testflight-prepare.mjs';
 import { CODEMAGIC_APP_ID, CODEMAGIC_BRANCH, TESTFLIGHT_GROUP, configureTestFlightCredentials, createCodemagicClient } from '../scripts/codemagic-local.mjs';
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
@@ -95,4 +97,75 @@ test('new Apple credentials are scoped to an isolated app group and stored as se
   assert.equal(imported.secure, true);
   assert.deepEqual(imported.variables.map(v => v.name), names);
   assert.ok(!JSON.stringify(report).includes('fixture-private-pem'));
+});
+
+test('EURO internal testing only reuses existing RUS internal testers and is idempotent', async () => {
+  let group;
+  let linkedBuilds = [];
+  let testers = [];
+  const writes = [];
+  const credentials = { keyId: 'fixture', issuerId: 'fixture', privateKey: generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey };
+  const build = { id: 'euro-build', type: 'builds', attributes: { version: '202610240902', processingState: 'VALID' } };
+  const app = { id: APPS.euro.appId, attributes: { bundleId: APPS.euro.bundleId } };
+  const user = { id: 'fixture-user', attributes: { username: 'fixture@example.test', roles: ['MARKETING'], allAppsVisible: true } };
+  let visibleApps = [{ id: APPS.rus.appId }];
+  const client = {
+    request: async path => ({ data: path.endsWith('/app') ? app : group }),
+    list: async path => {
+      if (path.startsWith('/v1/builds?')) return [build];
+      if (path === `/v1/apps/${APPS.rus.appId}/betaGroups`) return [{ id: 'internal', type: 'betaGroups', attributes: { isInternalGroup: true } }, { id: 'external', type: 'betaGroups', attributes: { isInternalGroup: false } }];
+      if (path === '/v1/betaGroups/internal/betaTesters') return [{ type: 'betaTesters', id: 'existing-tester', attributes: { email: 'fixture@example.test' } }];
+      if (path === '/v1/users?limit=200') return [user];
+      if (path === '/v1/users/fixture-user/visibleApps') return visibleApps;
+      if (path === `/v1/apps/${APPS.euro.appId}/betaGroups`) return group ? [group] : [];
+      if (path === '/v1/betaGroups/euro-group/betaTesters') return testers;
+      if (path === '/v1/betaGroups/euro-group/builds') return linkedBuilds;
+      if (path === `/v1/betaTesters?filter[apps]=${APPS.euro.appId}&limit=200`) return testers;
+      throw new Error('Unexpected read: ' + path);
+    },
+  };
+  const fetchImpl = async (url, options) => {
+    writes.push(url);
+    assert.equal(new URL(url).origin, 'https://api.appstoreconnect.apple.com');
+    assert.equal(options.method, 'POST');
+    assert.equal(options.redirect, 'error');
+    const body = JSON.parse(options.body);
+    if (url.endsWith('/v1/betaGroups')) {
+      assert.equal(body.data.relationships.app.data.id, APPS.euro.appId);
+      assert.equal(body.data.attributes.isInternalGroup, true);
+      assert.equal(body.data.attributes.hasAccessToAllBuilds, false);
+      group = { ...body.data, id: 'euro-group' };
+      return new Response(JSON.stringify({ data: group }), { status: 201 });
+    }
+    if (url.endsWith('/v1/betaTesters')) {
+      assert.equal(body.data.attributes.email, 'fixture@example.test');
+      assert.deepEqual(body.data.relationships.betaGroups.data, [{ type: 'betaGroups', id: 'euro-group' }]);
+      const tester = { ...body.data, id: 'euro-tester' };
+      testers.push(tester);
+      return new Response(JSON.stringify({ data: tester }), { status: 201 });
+    } else if (url.endsWith('/users/fixture-user/relationships/visibleApps')) {
+      assert.deepEqual(body.data, [{ type: 'apps', id: APPS.euro.appId }]);
+      visibleApps.push(...body.data);
+    } else if (url.endsWith('/relationships/betaTesters')) testers = body.data;
+    else if (url.endsWith('/relationships/builds')) linkedBuilds = body.data;
+    else throw new Error('Unexpected write');
+    return new Response(null, { status: 204 });
+  };
+  const report = await copyInternalTesters({ credentials, client, buildNumber: build.attributes.version, fetchImpl });
+  assert.equal(report.internalTesterCount, 1);
+  assert.equal(report.externalInvitations, false);
+  assert.equal(writes.length, 3);
+  await copyInternalTesters({ credentials, client, buildNumber: build.attributes.version, fetchImpl });
+  assert.equal(writes.length, 3);
+  user.attributes.allAppsVisible = false;
+  await assert.rejects(copyInternalTesters({ credentials, client, buildNumber: build.attributes.version, fetchImpl }));
+  assert.equal(writes.length, 3);
+  const granted = await copyInternalTesters({ credentials, client, buildNumber: build.attributes.version, grantEuroAppAccess: true, fetchImpl });
+  assert.equal(writes.length, 4);
+  assert.equal(granted.appAccessAdded, 1);
+  assert.deepEqual(user.attributes.roles, ['MARKETING']);
+  assert.ok(visibleApps.some(app => app.id === APPS.rus.appId));
+  app.id = APPS.rus.appId;
+  await assert.rejects(copyInternalTesters({ credentials, client, buildNumber: build.attributes.version, fetchImpl }));
+  assert.equal(writes.length, 4);
 });
