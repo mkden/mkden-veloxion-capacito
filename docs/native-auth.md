@@ -1,5 +1,26 @@
 # Native Authentication (RUS / EURO)
 
+## Verified Release: 24 October 2026
+
+- App source commit: `aad14e7` on `feature/ios-euro-app`.
+- RUS TestFlight: `202610241846`; EURO TestFlight: `202610241843`.
+  Both are processed by Apple and available to the existing internal groups.
+  No external invitations or App Review submissions were made.
+- RUS Android: `build-local/rus/Veloxion-RUS-1.0.2-4.apk`.
+- EURO Android: `build-local/euro/Veloxion-EURO-1.0.1-2.apk`.
+  Both preserve their previous signing certificates. RUS retains its historical
+  local debug-key signing flow for sideloaded tests; it is not a new production
+  Google Play signing setup. EURO uses its existing dedicated release key.
+- Both frontends were deployed from separately staged successful builds with
+  source/build backups. No backend, database, prices or payment settings changed.
+- 160 automated app/frontend checks passed. Four live browser checks confirmed
+  web compatibility and native hand-off on both sites. Android offline forms,
+  consent defaults and the connection error were inspected in an isolated,
+  read-only emulator. Real SMS/email delivery and physical iPhone checks are
+  still required; no accounts or verification codes were created for these tests.
+
+## Behavior
+
 The launcher is an Android `AppCompatActivity` or an iOS UIKit view controller,
 not a website or a local HTML login form. The bundled screen renders offline.
 Signing in, creating an account, sending a code and opening the workspace still
