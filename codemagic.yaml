@@ -27,6 +27,7 @@ workflows:
         script: node scripts/ci-testflight-prepare.mjs euro
       - name: Sign only with the EURO profile and build
         script: |
+          set -e
           xcode-project use-profiles --project ios/App/App.xcodeproj --profile "$CM_BUILD_DIR/build/testflight/euro.mobileprovision"
           xcode-project build-ipa --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" --scheme App
           node scripts/verify-ios-ipa.mjs euro
@@ -73,6 +74,7 @@ workflows:
         script: node scripts/ci-testflight-prepare.mjs rus
       - name: Sign only with the RUS profile and build
         script: |
+          set -e
           xcode-project use-profiles --project ios/App/App.xcodeproj --profile "$CM_BUILD_DIR/build/testflight/rus.mobileprovision"
           xcode-project build-ipa --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" --scheme App
           node scripts/verify-ios-ipa.mjs rus

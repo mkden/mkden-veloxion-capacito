@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { APPS, nextBuildNumber } from '../scripts/ci-testflight-prepare.mjs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { APPS, nextBuildNumber, installProvisioningProfile } from '../scripts/ci-testflight-prepare.mjs';
 import { CODEMAGIC_APP_ID, CODEMAGIC_BRANCH, TESTFLIGHT_GROUP, configureTestFlightCredentials, createCodemagicClient } from '../scripts/codemagic-local.mjs';
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 
@@ -45,6 +47,20 @@ test('build preflight requires a matching private identity and actual IPA identi
   assert.match(read('scripts/verify-ios-ipa.mjs'), /CFBundleIdentifier !== APPS\[region\].bundleId/);
   assert.match(read('scripts/verify-ios-ipa.mjs'), /CFBundleVersion/);
   assert.match(read('scripts/verify-ios-ipa.mjs'), /codesign/);
+});
+
+test('downloaded profiles are installed for current and legacy Xcode without unsafe file names', () => {
+  const home = mkdtempSync(join(tmpdir(), 'veloxion-profile-install-'));
+  try {
+    const profile = join(home, 'fixture.mobileprovision');
+    writeFileSync(profile, 'fixture-profile');
+    const uuid = '7cba2840-aa32-4a4b-a949-18c2ee132c47';
+    assert.equal(installProvisioningProfile(profile, `<key>UUID</key><string>${uuid}</string>`, home), uuid);
+    for (const directory of ['Library/Developer/Xcode/UserData/Provisioning Profiles', 'Library/MobileDevice/Provisioning Profiles']) {
+      assert.equal(readFileSync(join(home, directory, uuid + '.mobileprovision'), 'utf8'), 'fixture-profile');
+    }
+    assert.throws(() => installProvisioningProfile(profile, '<key>UUID</key><string>../../bad</string>', home));
+  } finally { rmSync(home, { recursive: true, force: true }); }
 });
 
 test('Codemagic token is never sent to foreign hosts and only two approved build workflows can start', async () => {

@@ -1,5 +1,6 @@
 import { X509Certificate } from 'node:crypto';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { AppStoreError, createClient, credentialsFromEnvironment } from './app-store-api.mjs';
@@ -16,6 +17,17 @@ export function nextBuildNumber(builds, now = new Date()) {
   const next = Math.max(Number(date), ...previous.map(n => n + 1));
   if (!Number.isSafeInteger(next)) throw new Error('Build number is out of range.');
   return String(next);
+}
+
+export function installProvisioningProfile(profilePath, plist, home = homedir()) {
+  const uuid = /<key>\s*UUID\s*<\/key>\s*<string>([^<]+)<\/string>/.exec(plist)?.[1];
+  if (!/^[A-Fa-f0-9]{8}(?:-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$/.test(uuid || '')) throw new AppStoreError('Invalid provisioning profile UUID.');
+  const directories = [join(home, 'Library/Developer/Xcode/UserData/Provisioning Profiles'), join(home, 'Library/MobileDevice/Provisioning Profiles')];
+  for (const directory of directories) {
+    mkdirSync(directory, { recursive: true });
+    copyFileSync(profilePath, join(directory, `${uuid}.mobileprovision`));
+  }
+  return uuid;
 }
 
 export async function prepare(region) {
@@ -55,7 +67,7 @@ export async function prepare(region) {
     catch { continue; }
     try { validateProfilePlist(plist, { teamId, prefix: bundle.attributes.seedId || teamId, bundleId: app.bundleId }); }
     catch { continue; }
-    selected = { profileId: candidate.id, teamId };
+    selected = { profileId: candidate.id, teamId, installedProfileUuid: installProvisioningProfile(profilePath, plist) };
     break;
   }
   if (!selected) throw new AppStoreError('No exact regional App Store/APNs profile matches an available private signing identity. No certificate will be created or revoked.');
