@@ -12,6 +12,11 @@ ios/App/App.xcworkspace/xcuserdata/
 *.keystore
 *.jks
 *.p12
+*.pfx
+*.p8
+*.key.pem
+*.csr
+p12-password.txt
 *.mobileprovision
 google-services.json
 GoogleService-Info.plist

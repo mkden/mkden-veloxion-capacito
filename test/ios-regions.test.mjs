@@ -59,7 +59,10 @@ function bundleFixture() {
     client: {
       async list(path) {
         if (path.startsWith('/v1/bundleIds?')) return bundle ? [bundle] : [];
-        if (path.includes('/bundleIdCapabilities')) return capabilities;
+        if (path.includes('/bundleIdCapabilities')) {
+          assert.ok(!path.includes('?limit='), 'Live Apple capabilities endpoint rejects an explicit limit');
+          return capabilities;
+        }
         if (path.startsWith('/v1/apps?')) return [];
         throw new Error(`Unexpected read ${path}`);
       },

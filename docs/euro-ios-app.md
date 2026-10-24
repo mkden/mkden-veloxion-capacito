@@ -35,6 +35,14 @@ is claimed merely because local tests/builds pass.
 
 ## Apple and Codemagic Setup
 
+Verified in Apple on 2026-10-24: the EURO Bundle ID exists with In-App Purchase
+and Push Notifications enabled. A separate active EURO App Store profile was
+created with the current distribution certificate from the successful RUS IPA.
+The account already has three distribution certificates, so none was created or
+revoked. The profile's production APNs, application identifier, team and absence
+of development/ad-hoc entitlements were checked. The EURO app card does not yet
+exist; no EURO build or publication is implied by this provisioning result.
+
 1. Push `feature/ios-euro-app` to run `ios-euro-bootstrap`. It uses the existing
    `veloxion-appstore` CI integration to register only `eu.veloxion.app`, enable
    Push Notifications and In-App Purchase capabilities and verify them. It does
@@ -102,6 +110,41 @@ The preparation script changes only the two iOS Bundle IDs, iOS display/privacy
 strings and offline-screen region. It validates all expected inputs before edits
 and can be rerun safely. RUS CI explicitly prepares `rus`; Android is untouched.
 Never commit generated EURO Xcode/Capacitor output over the default RUS project.
+
+## Private Local Apple Access
+
+`scripts/connect-app-store.ps1 -CredentialPath <private-connector-directory>/.env`
+opens a local setup flow for a Team API key with provisioning access. Use an Admin
+team key when issuing distribution certificates; individual keys do not support
+provisioning. The key file is copied outside the repository into a Windows ACL
+restricted directory. Existing connection files are not overwritten; no Apple
+Account password, raw key or generated P12 password is printed.
+
+Set `CONNECTOR_ENV_PATH` to that private `.env` when running the helper:
+
+```powershell
+node scripts/app-store-local.mjs test
+node scripts/app-store-local.mjs bundle
+node scripts/app-store-local.mjs reuse-signing --previous-ipa <successful-RUS-build.ipa>
+```
+
+`reuse-signing` verifies the public certificate from the previous IPA against the
+current Apple certificate, then creates/reuses only the EURO profile. It never
+creates or revokes certificates or extracts private signing keys. Import/fetch
+the downloaded EURO `.mobileprovision` in Codemagic Code signing identities; the
+matching certificate and its private key must already be available there.
+
+The separate `signing` command issues a distribution certificate only for a
+locally generated RSA key if a matching certificate does not exist and the
+conservative three-certificate limit has not been reached. Generated P12/password
+files stay in private connector storage, never in reports or Git. It must not be
+used to work around a full certificate quota by revoking a RUS certificate.
+
+Run provisioning tests without contacting Apple:
+
+```powershell
+node --test test/app-store-signing.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs
+```
 
 ## Official References
 

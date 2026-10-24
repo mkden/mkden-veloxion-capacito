@@ -24,7 +24,8 @@ export async function configureEuroBundle(client, { apply = false } = {}) {
       if (!bundle?.id || bundle.attributes?.identifier !== region.appId) throw new AppStoreError('Apple did not confirm the EURO Bundle ID.');
     }
   }
-  let capabilities = bundle ? await client.list(`/v1/bundleIds/${encodeURIComponent(bundle.id)}/bundleIdCapabilities?limit=200`) : [];
+  // Apple's live provisioning endpoint rejects an explicit limit, despite its schema.
+  let capabilities = bundle ? await client.list(`/v1/bundleIds/${encodeURIComponent(bundle.id)}/bundleIdCapabilities`) : [];
   for (const capabilityType of requiredCapabilities) {
     if (capabilities.some(c => c.attributes?.capabilityType === capabilityType)) continue;
     actions.push(`${apply ? 'enable' : 'would-enable'}-${capabilityType}`);
@@ -34,7 +35,7 @@ export async function configureEuroBundle(client, { apply = false } = {}) {
     } } });
   }
   if (apply) {
-    capabilities = await client.list(`/v1/bundleIds/${encodeURIComponent(bundle.id)}/bundleIdCapabilities?limit=200`);
+    capabilities = await client.list(`/v1/bundleIds/${encodeURIComponent(bundle.id)}/bundleIdCapabilities`);
     if (!requiredCapabilities.every(type => capabilities.some(c => c.attributes?.capabilityType === type))) throw new AppStoreError('EURO capability verification failed.');
   }
   const apps = await client.list(`/v1/apps?filter[bundleId]=${region.appId}&limit=2`);

@@ -1,4 +1,4 @@
-import { createPrivateKey, sign } from 'node:crypto';
+import { createPrivateKey, createHash, X509Certificate, sign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 const ORIGIN = 'https://api.appstoreconnect.apple.com';
@@ -58,8 +58,9 @@ function checkWrite(method, url, body) {
   throw new AppStoreError('Write refused: only consumable drafts, localizations and notification URLs are allowed. Pricing, availability, deletion and submission are forbidden.');
 }
 
-export function createClient({ credentials, fetchImpl = fetch, allowMetadata = false, allowEuroBundle = false }) {
+export function createClient({ credentials, fetchImpl = fetch, allowMetadata = false, allowEuroBundle = false, euroSigning }) {
   const euroBundleResources = new Set();
+  const signingCertificates = new Set();
   async function request(path, { method = 'GET', body } = {}) {
     const url = new URL(path, ORIGIN);
     if (url.origin !== ORIGIN || url.username || url.password || url.hash || !/^\/v[12]\//.test(url.pathname)) {
@@ -77,7 +78,24 @@ export function createClient({ credentials, fetchImpl = fetch, allowMetadata = f
           && data.relationships?.bundleId?.data?.type === 'bundleIds'
           && euroBundleResources.has(data.relationships.bundleId.data.id))
       );
-      if (!euroBundleWrite) {
+      const euroSigningWrite = euroSigning && method === 'POST' && (
+        (url.pathname === '/v1/certificates' && data?.type === 'certificates'
+          && data.attributes?.certificateType === 'DISTRIBUTION'
+          && data.attributes?.csrContent === euroSigning.csr && Boolean(euroSigning.csr)
+          && Object.keys(data.attributes).every(key => ['certificateType', 'csrContent'].includes(key))
+          && !data.relationships)
+        || (url.pathname === '/v1/profiles' && data?.type === 'profiles'
+          && data.attributes?.profileType === 'IOS_APP_STORE'
+          && /^Veloxion Europe App Store(?: [0-9TZ-]+)?$/.test(data.attributes?.name || '')
+          && Object.keys(data.attributes).every(key => ['name', 'profileType'].includes(key))
+          && data.relationships?.bundleId?.data?.type === 'bundleIds'
+          && euroBundleResources.has(data.relationships.bundleId.data.id)
+          && data.relationships?.certificates?.data?.length === 1
+          && data.relationships.certificates.data[0]?.type === 'certificates'
+          && signingCertificates.has(data.relationships.certificates.data[0].id)
+          && Object.keys(data.relationships).every(key => ['bundleId', 'certificates'].includes(key)))
+      );
+      if (!euroBundleWrite && !euroSigningWrite) {
         if (!allowMetadata) throw new AppStoreError('Read-only mode: this operation is not authorized.');
         checkWrite(method, url, body);
       }
@@ -103,6 +121,13 @@ export function createClient({ credentials, fetchImpl = fetch, allowMetadata = f
     for (const resource of resources) {
       if (resource?.type === 'bundleIds' && resource.attributes?.identifier === 'eu.veloxion.app'
         && ['IOS', 'UNIVERSAL'].includes(resource.attributes?.platform) && resource.id) euroBundleResources.add(resource.id);
+      if (euroSigning && resource?.type === 'certificates' && ['DISTRIBUTION', 'IOS_DISTRIBUTION'].includes(resource.attributes?.certificateType)) {
+        try {
+          const certificate = new X509Certificate(Buffer.from(resource.attributes.certificateContent, 'base64'));
+          const digest = createHash('sha256').update(certificate.publicKey.export({ format: 'der', type: 'spki' })).digest('hex');
+          if (digest === euroSigning.publicKeySha256 && Date.parse(certificate.validTo) > Date.now() + 86400000 && resource.id) signingCertificates.add(resource.id);
+        } catch { /* Unreadable/foreign certificates never authorize profile creation. */ }
+      }
     }
     return payload;
   }
