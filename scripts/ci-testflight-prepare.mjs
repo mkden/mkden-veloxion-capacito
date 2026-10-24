@@ -22,7 +22,12 @@ export async function prepare(region) {
   const app = APPS[region];
   if (!app || process.env.VELOXION_APP_REGION !== region) throw new AppStoreError('Explicit matching iOS region is required.');
   if (process.platform !== 'darwin') throw new AppStoreError('Signing preflight must run on the Codemagic Mac.');
-  const client = createClient({ credentials: credentialsFromEnvironment() });
+  // Integration-generated APP_STORE_CONNECT_* variables must not shadow the upload key.
+  const client = createClient({ credentials: credentialsFromEnvironment({
+    APP_STORE_CONNECT_KEY_IDENTIFIER: process.env.VELOXION_APPLE_KEY_ID,
+    APP_STORE_CONNECT_ISSUER_ID: process.env.VELOXION_APPLE_ISSUER_ID,
+    APP_STORE_CONNECT_PRIVATE_KEY: process.env.VELOXION_APPLE_PRIVATE_KEY,
+  }) });
   const record = (await client.request(`/v1/apps/${app.appId}`)).data;
   if (record?.attributes?.bundleId !== app.bundleId) throw new AppStoreError('Apple app ID does not match the requested region.');
   const bundles = await client.list(`/v1/bundleIds?filter[identifier]=${app.bundleId}&limit=2`);

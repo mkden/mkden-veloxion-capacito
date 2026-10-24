@@ -22,7 +22,7 @@ test('TestFlight uploads are manual, isolated by region and cannot submit to eit
     assert.match(text, new RegExp(`verify-ios-ipa.mjs ${region}`));
     assert.match(text, /publishing:/);
     assert.ok(text.includes(TESTFLIGHT_GROUP));
-    assert.match(text, /api_key: \$APP_STORE_CONNECT_PRIVATE_KEY/);
+    assert.match(text, /api_key: \$VELOXION_APPLE_PRIVATE_KEY/);
     assert.doesNotMatch(text, /- appstore_credentials|auth: integration/);
     assert.match(text, /submit_to_app_store: false/);
     assert.match(text, /submit_to_testflight: false/);
@@ -67,7 +67,7 @@ test('Codemagic errors never print the server body or token', async () => {
 
 test('new Apple credentials are scoped to an isolated app group and stored as secrets', async () => {
   const calls = [];
-  const names = ['APP_STORE_CONNECT_KEY_IDENTIFIER', 'APP_STORE_CONNECT_ISSUER_ID', 'APP_STORE_CONNECT_PRIVATE_KEY'];
+  const names = ['VELOXION_APPLE_KEY_ID', 'VELOXION_APPLE_ISSUER_ID', 'VELOXION_APPLE_PRIVATE_KEY'];
   const results = [{ data: [] }, { data: { id: 'b'.repeat(24), name: TESTFLIGHT_GROUP } }, { data: [] }, null,
     { data: names.map(name => ({ name, secure: true, value: null })) }];
   const report = await configureTestFlightCredentials({ token: 'fixture-token', credentials: { keyId: 'fixture-id', issuerId: 'fixture-issuer', privateKey: { export: () => 'fixture-private-pem' } },

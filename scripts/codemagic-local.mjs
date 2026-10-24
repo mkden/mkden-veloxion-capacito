@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 export const CODEMAGIC_APP_ID = '6a7099c79158da398bcfb28e';
 export const CODEMAGIC_BRANCH = 'feature/ios-euro-app';
 const ORIGIN = 'https://api.codemagic.io';
-export const TESTFLIGHT_GROUP = 'veloxion_testflight_20261024';
+export const TESTFLIGHT_GROUP = 'veloxion_testflight_20261024_v2';
 
 export async function configureTestFlightCredentials({ token, credentials, fetchImpl = fetch }) {
   const origin = 'https://codemagic.io';
@@ -28,7 +28,7 @@ export async function configureTestFlightCredentials({ token, credentials, fetch
   if (!/^[a-f0-9]{24}$/i.test(group?.id || '')) throw new Error('Codemagic did not confirm the credential group.');
   const variablesPath = `/api/v3/variable-groups/${group.id}/variables`;
   let variables = (await request(variablesPath + '?page_size=100')).data;
-  const names = ['APP_STORE_CONNECT_KEY_IDENTIFIER', 'APP_STORE_CONNECT_ISSUER_ID', 'APP_STORE_CONNECT_PRIVATE_KEY'];
+  const names = ['VELOXION_APPLE_KEY_ID', 'VELOXION_APPLE_ISSUER_ID', 'VELOXION_APPLE_PRIVATE_KEY'];
   if (!variables.length) {
     // Export directly into the trusted CI secret store, never into logs or repository files.
     const values = [credentials.keyId, credentials.issuerId, credentials.privateKey.export({ format: 'pem', type: 'pkcs8' }).toString()];
