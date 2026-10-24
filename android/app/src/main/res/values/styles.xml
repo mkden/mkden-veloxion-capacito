@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="AppTheme.NativeAuth" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#edf5f9</item>
+        <item name="android:navigationBarColor">#edf5f9</item>
+        <item name="android:windowBackground">#edf5f9</item>
+        <item name="colorAccent">#258ab3</item>
+    </style>
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">

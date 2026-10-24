@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A89000010000000000000001 /* NativeAuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000011; };
+        A89000010000000000000002 /* NativeAuthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000012; };
+        A89000010000000000000003 /* NativeAuthPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000013; };
         A88000010000000000000001 /* VeloxionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88000010000000000000003 /* VeloxionViewController.swift */; };
         A88000010000000000000002 /* VeloxionPurchasesPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88000010000000000000004 /* VeloxionPurchasesPlugin.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
@@ -21,6 +24,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        A89000010000000000000011 /* NativeAuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAuthSession.swift; sourceTree = "<group>"; };
+        A89000010000000000000012 /* NativeAuthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAuthViewController.swift; sourceTree = "<group>"; };
+        A89000010000000000000013 /* NativeAuthPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAuthPlugin.swift; sourceTree = "<group>"; };
         A88000010000000000000003 /* VeloxionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeloxionViewController.swift; sourceTree = "<group>"; };
         A88000010000000000000004 /* VeloxionPurchasesPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VeloxionPurchasesPlugin.swift; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -73,6 +79,9 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				A88000010000000000000003 /* VeloxionViewController.swift */,
 				A88000010000000000000004 /* VeloxionPurchasesPlugin.swift */,
+				A89000010000000000000011 /* NativeAuthSession.swift */,
+				A89000010000000000000012 /* NativeAuthViewController.swift */,
+				A89000010000000000000013 /* NativeAuthPlugin.swift */,
 				504EC3091FED79650016851F /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -170,6 +179,9 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A88000010000000000000001 /* VeloxionViewController.swift in Sources */,
 				A88000010000000000000002 /* VeloxionPurchasesPlugin.swift in Sources */,
+				A89000010000000000000001 /* NativeAuthSession.swift in Sources */,
+				A89000010000000000000002 /* NativeAuthViewController.swift in Sources */,
+				A89000010000000000000003 /* NativeAuthPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

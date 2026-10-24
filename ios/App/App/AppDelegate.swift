@@ -6,6 +6,22 @@ import UserNotifications
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    var webAuthAllowed = false
+    var webAuthStarted = false
+
+    func showNativeAuth() {
+        webAuthAllowed = false
+        window?.rootViewController = NativeAuthViewController()
+        window?.makeKeyAndVisible()
+    }
+
+    func showWorkspace(webAuth: Bool) {
+        webAuthAllowed = webAuth
+        webAuthStarted = false
+        window?.rootViewController = UIStoryboard(name: "Main", bundle: nil).instantiateInitialViewController()
+        window?.makeKeyAndVisible()
+        DispatchQueue.main.async { [weak self] in self?.configureBridgeWebView() }
+    }
 
     private func configureBridgeWebView() {
         guard let bridgeController = window?.rootViewController as? CAPBridgeViewController,
@@ -24,9 +40,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        DispatchQueue.main.async { [weak self] in
-            self?.configureBridgeWebView()
-        }
+        window = UIWindow(frame: UIScreen.main.bounds)
+        showNativeAuth()
         return true
     }
 

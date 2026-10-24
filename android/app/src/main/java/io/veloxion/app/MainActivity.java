@@ -18,6 +18,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(NativeAuthPlugin.class);
         super.onCreate(savedInstanceState);
 
         WebView webView = getBridge().getWebView();
@@ -52,7 +53,7 @@ public class MainActivity extends BridgeActivity {
             }
 
             request.setTitle(fileName);
-            request.setDescription("Скачивание из Veloxion AI");
+            request.setDescription(getPackageName().equals("eu.veloxion.app") ? "Downloading from Veloxion AI" : "Скачивание из Veloxion AI");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             request.setAllowedOverMetered(true);
             request.setAllowedOverRoaming(true);
@@ -64,9 +65,9 @@ public class MainActivity extends BridgeActivity {
 
             DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
             manager.enqueue(request);
-            Toast.makeText(this, "Файл добавлен в загрузки", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getPackageName().equals("eu.veloxion.app") ? "File added to downloads" : "Файл добавлен в загрузки", Toast.LENGTH_SHORT).show();
         } catch (Exception error) {
-            Toast.makeText(this, "Не удалось скачать файл", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getPackageName().equals("eu.veloxion.app") ? "Could not download the file" : "Не удалось скачать файл", Toast.LENGTH_LONG).show();
         }
     }
 }

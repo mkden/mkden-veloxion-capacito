@@ -1,0 +1,34 @@
+{
+  "en": {
+    "title": "Your creative workspace",
+    "intro": "Sign in or create an account. This screen is available even without an internet connection.",
+    "login": "Sign in", "register": "Create account", "name": "Your name", "email": "Email", "phone": "Phone, including country code",
+    "password": "Password", "confirm": "Repeat password", "code": "Verification code", "send": "Send code", "continue": "Continue",
+    "resend": "Send a new code", "back": "Back", "consent": "I accept the service rules, privacy policy and public offer",
+    "rules": "Service rules", "privacy": "Privacy policy", "offer": "Public offer",
+    "offline": "No connection to Veloxion. Check your internet connection and try again. Your account data is safe.",
+    "retry": "Check connection", "working": "Connecting...", "sent": "Code sent. Enter it below. Codes expire after 10 minutes.",
+    "invalid": "Check the details and try again. Passwords must match and contain at least 6 characters; accept the terms to register.",
+    "denied": "Could not sign in. Check your details and verification code. If you do not have an account, select Create account.",
+    "rate": "Too many attempts. Please wait before trying again.", "server": "Veloxion is temporarily unavailable. Please try again later.",
+    "expired": "Please sign in again to continue.", "secure": "Your session is stored securely on this device. Passwords and codes are never saved.",
+    "other": "Other sign-in methods (online)", "emailLogin": "Sign in with email", "phoneLogin": "Sign in with phone",
+    "wait": "Wait before requesting another code.", "restore": "Checking your saved session..."
+  },
+  "ru": {
+    "title": "Ваше творческое пространство",
+    "intro": "Войдите или создайте аккаунт. Этот экран доступен даже без интернета.",
+    "login": "Войти", "register": "Регистрация", "name": "Ваше имя", "email": "Email", "phone": "Телефон с кодом страны",
+    "password": "Пароль", "confirm": "Повторите пароль", "code": "Код подтверждения", "send": "Получить код", "continue": "Продолжить",
+    "resend": "Отправить код повторно", "back": "Назад", "consent": "Принимаю правила сервиса, политику конфиденциальности и публичную оферту",
+    "rules": "Правила сервиса", "privacy": "Политика конфиденциальности", "offer": "Публичная оферта",
+    "offline": "Нет соединения с Veloxion. Проверьте интернет и попробуйте снова. Данные аккаунта в сохранности.",
+    "retry": "Проверить соединение", "working": "Подключаемся...", "sent": "Код отправлен. Введите его ниже. Код действует 10 минут.",
+    "invalid": "Проверьте заполнение полей. Пароли должны совпадать и содержать от 6 символов. Для регистрации примите условия.",
+    "denied": "Не удалось войти. Проверьте данные и код подтверждения. Если аккаунта ещё нет, выберите регистрацию.",
+    "rate": "Слишком много попыток. Подождите и попробуйте позже.", "server": "Veloxion временно недоступен. Попробуйте немного позже.",
+    "expired": "Для продолжения войдите в аккаунт заново.", "secure": "Сессия защищена на этом устройстве. Пароли и коды не сохраняются.",
+    "other": "Другие способы входа (онлайн)", "emailLogin": "Войти по email", "phoneLogin": "Войти по телефону",
+    "wait": "Подождите перед повторной отправкой кода.", "restore": "Проверяем сохранённую сессию..."
+  }
+}

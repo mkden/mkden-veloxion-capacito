@@ -1,14 +1,21 @@
 apply plugin: 'com.android.application'
 
+def regionName = System.getenv('VELOXION_APP_REGION') ?: 'rus'
+if (!(regionName in ['rus', 'euro'])) throw new GradleException('Invalid Veloxion Android region')
+def region = new groovy.json.JsonSlurper().parse(rootProject.file('../app-regions.json'))[regionName]
+def requestedVersionCode = project.findProperty('veloxionVersionCode')
+def requestedVersionName = project.findProperty('veloxionVersionName')
+
 android {
     namespace = "io.veloxion.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "io.veloxion.app"
+        applicationId region.appId
+        manifestPlaceholders = [veloxionAppName: region.appName]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.1"
+        versionCode requestedVersionCode ? Integer.parseInt(requestedVersionCode) : (regionName == 'euro' ? 1 : 3)
+        versionName requestedVersionName ?: (regionName == 'euro' ? '1.0.0' : '1.0.1')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

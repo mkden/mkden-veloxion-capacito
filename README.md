@@ -7,13 +7,30 @@ Capacitor-оболочка личного кабинета Veloxion AI для An
 - Название: `Veloxion AI`
 - Android: min API 24, target API 36
 
+## Статус На 24.10.2026
+
+- Общие исходники используют Capacitor `8.4.2`; RUS остаётся регионом по умолчанию.
+- RUS iOS `1.0 (202610240858)` и EURO iOS `1.0 (202610240902)` загружены и обработаны Apple. Это не одобрение App Review и не проверка покупок на устройстве.
+- EURO: отдельная карточка App Store `6826526999` и закрытая группа `Veloxion EURO Internal` с четырьмя внутренними тестировщиками. RUS App Store ID: `6797630481`.
+- За цифровые AI-кредиты в iOS реализован StoreKit In-App Purchase, не Apple Pay/Stripe. Настройка товаров и реальные Sandbox-тесты обязательны до включения.
+- EURO Android `1.0.0`, versionCode `1`: подписанный APK `build-local/euro/Veloxion-EURO-1.0.0-1.apk` (локальный файл, не Git).
+- Android EURO использует FCM HTTP v1 и Firebase-проект RUS с ограничением пакета `eu.veloxion.app`. Google принял проверочный запрос без отправки; доставку нужно проверить на телефоне после входа и выдачи разрешения.
+- iOS push остаются на APNs; Android FCM не включает автоматически APNs или Apple-покупки. Публикация в Google Play и отправка на App Review не выполнялись.
+
+Общий статус backend/frontend: [README проекта](../README.md).
+
 ## Отдельное приложение EURO
 
 Конфигурация `euro`: `Veloxion AI Europe`, Bundle ID `eu.veloxion.app`,
 сайт `https://veloxion.eu/lk`. По умолчанию по-прежнему собирается RUS.
 Отдельные workflows `ios-euro-bootstrap` и `ios-euro-validation` не публикуют
-приложение автоматически. Статус, ограничения оплаты/пушей и инструкция:
+приложение автоматически. Для загрузки IPA добавлены `ios-euro-testflight`
+и `ios-rus-testflight`; модерация App Store отделена от загрузки.
+Статус, ограничения оплаты/пушей и инструкция:
 [docs/euro-ios-app.md](docs/euro-ios-app.md).
+
+EURO Android: отдельный APK `eu.veloxion.app`, команды сборки, подпись и FCM:
+[docs/euro-android-app.md](docs/euro-android-app.md).
 
 ## Подготовка
 
@@ -44,7 +61,7 @@ Backend API внутри webview:
 1. В `capacitor/package.json` уже подключен `@capacitor/push-notifications`
 2. В iOS `AppDelegate.swift` уже добавлены callback-методы регистрации APNs
 3. Текущая iOS-схема push в проекте использует `APNs` через backend, а не обязательный Firebase Messaging SDK
-3. После изменения плагинов всегда выполняй:
+4. После изменения плагинов всегда выполняй:
 
 ```powershell
 npx cap sync
@@ -116,7 +133,7 @@ npm run open:android
 
 - без `google-services.json` FCM token не зарегистрируется
 - Android 13+ потребует разрешение на уведомления, приложение запросит его само
-- если нужен красивый push icon, добавь отдельную белую иконку в Android resources
+- для EURO уже добавлена отдельная белая notification-иконка `ic_stat_veloxion`
 
 ## iOS push setup
 
@@ -163,7 +180,10 @@ CI-сборки добавлен fallback-пустой plist, чтобы Xcode �
 
 ## Codemagic iOS build
 
-Сейчас `codemagic.yaml` настроен на сборку `ios-release` из ветки `main`.
+В `codemagic.yaml` сохранён `ios-release` для RUS из ветки `main`.
+Отдельные `ios-rus-testflight` и `ios-euro-testflight` собирают и загружают IPA
+с региональным provisioning profile. Setup/validation workflows не являются
+отправкой на модерацию. Проверки: `node --test test/*.test.mjs`.
 
 Что уже учтено:
 
@@ -185,16 +205,19 @@ Xcode log, а не только статус signing.
 Локальная Android-сборка использует:
 
 ```text
-JDK:          C:\Program Files\Java\jdk-22
+JDK:          E:\SDK\jbr (21+, либо JAVA_HOME / -JavaHome)
 Android SDK:  E:\non\android-sdk\Sdk
-Gradle cache: .\gradle-user
+Gradle cache: .\.gradle-user
 Build output: android\app\build\outputs\apk\
 ```
 
 Сборка теперь идет локально внутри проекта, без внешних build-папок и без привязки
 к `E:\ford`.
 
-## Android release
+## Android Release RUS
+
+Команды этого раздела используют регион RUS по умолчанию. Для EURO применяйте
+отдельные команды и release-keystore из [инструкции EURO](docs/euro-android-app.md).
 
 Основная команда собирает, выравнивает, подписывает и проверяет APK:
 
@@ -232,17 +255,18 @@ npm run open:android
 npm run build:android:unsigned
 ```
 
-Release подписывается keystore из
+Текущий RUS helper подписывает release keystore из
 `%USERPROFILE%\.android\debug.keystore`. Для обновления установленного
-приложения необходимо использовать тот же keystore.
+приложения необходимо использовать тот же keystore. Это не production-keystore
+EURO: EURO использует отдельный закрытый release-ключ вне репозитория.
 
 ### Что нужно, чтобы Android собирался без танцев
 
 1. Должен быть установлен `Node.js 22+`.
-2. Должен быть установлен `JDK 22` в:
+2. Должен быть установлен `JDK 21+`, например в:
 
 ```text
-C:\Program Files\Java\jdk-22
+E:\SDK\jbr
 ```
 
 3. Должен быть доступен Android SDK в:
@@ -272,7 +296,7 @@ npm run build:android:release
 
 ### Как устроена текущая Android-сборка
 
-- используется локальный Gradle cache: `.\gradle-user`
+- используется локальный Gradle cache: `.\.gradle-user`
 - Gradle запускается прямо из `android\gradlew.bat`
 - release APK собирается в стандартную папку Android Gradle
 - затем скрипт автоматически:
@@ -306,7 +330,7 @@ android\app\build\outputs\apk\release\veloxion-release-installable.apk
 
 ### Частые причины, если сборка не идет
 
-- стоит `JDK 17`, а не `JDK 22`
+- стоит `JDK 17` вместо требуемого `JDK 21+`
 - не найден `Android SDK` по пути `E:\non\android-sdk\Sdk`
 - не выполнен `npm install`
 - менялись плагины, но не был сделан `cap sync`
@@ -326,13 +350,13 @@ assets\logo.png
 Исходный логотип проекта:
 
 ```text
-..\frontend\public\branding\veloxion-logo.png
+..\rus\frontend\public\branding\veloxion-logo.png
 ```
 
 После его изменения:
 
 ```powershell
-Copy-Item ..\frontend\public\branding\veloxion-logo.png assets\logo.png -Force
+Copy-Item ..\rus\frontend\public\branding\veloxion-logo.png assets\logo.png -Force
 npm run assets
 npm run build:android
 ```
@@ -373,7 +397,15 @@ iOS-проект можно подготовить на Windows, но собра
 npm run open:ios
 ```
 
-## Как проверить, что push подключился
+## Проверка Push EURO
+
+Войти в EURO-приложение, разрешить уведомления и проверить `/admin/push` под
+своим администратором. Статус: `GET /api/admin/push/status`, тест только на
+собственные устройства: `POST /api/admin/push/test`. Оба требуют авторизации
+и прав администратора. EURO хранит устройства в `native_push_tokens` с provider
+`fcm` или `apns`. Принятие сообщения провайдером не доказывает его показ.
+
+## Проверка Push RUS
 
 1. Войти в приложение под пользователем.
 2. Разрешить уведомления.
@@ -413,6 +445,16 @@ E:\non\android-sdk\Sdk\build-tools\36.0.0\apksigner.bat verify --verbose `
 ```
 
 Ожидаемый результат: APK Signature Scheme v2/v3 подтверждена.
+
+## Нативный Вход RUS / EURO
+
+На iOS и Android первым открывается нативный экран входа/регистрации, доступный
+без интернета. RUS: телефон и SMS-код, также вход по email для существующих
+аккаунтов. EURO: email, пароль и подтверждение email при регистрации.
+Создание аккаунта и проверка кода требуют сети; отложенных запросов нет.
+Токены защищены Keychain / Android Keystore. После явного выхода сохранённая
+сессия очищается и без сети. Сначала обновляется frontend обеих редакций,
+затем распространяются новые сборки. Подробности: [native-auth.md](docs/native-auth.md).
 
 ## iOS In-App Purchase
 

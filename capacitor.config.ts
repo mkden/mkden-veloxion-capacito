@@ -11,6 +11,8 @@ const config: CapacitorConfig = {
   appId: region.appId,
   appName: region.appName,
   webDir: "www",
+  // Native bridge calls carry session tokens. Never include their payloads in device logs.
+  loggingBehavior: "none",
   server: {
     url: region.url,
     errorPath: "index.html",
@@ -18,11 +20,12 @@ const config: CapacitorConfig = {
     allowNavigation: region.allowNavigation
   },
   android: {
+    appendUserAgent: "VeloxionNativeAuth/1",
     allowMixedContent: false,
     backgroundColor: "#edf5f9"
   },
   ios: {
-    appendUserAgent: "VeloxionApp/iOS",
+    appendUserAgent: "VeloxionApp/iOS VeloxionNativeAuth/1",
     backgroundColor: "#edf5f9",
     contentInset: "never",
     preferredContentMode: "mobile"

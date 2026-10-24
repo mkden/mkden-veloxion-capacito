@@ -84,6 +84,7 @@
         <h1>Нет соединения</h1>
         <p id="message">Проверьте интернет и попробуйте подключиться снова.</p>
         <button id="retry" type="button">↻&nbsp; Обновить</button>
+        <button id="native-login" type="button" hidden style="background:transparent;box-shadow:none;color:#426680;margin-top:12px">Вернуться ко входу</button>
         <div class="note">Ваши данные в аккаунте останутся в сохранности.</div>
       </section>
     </main>
@@ -106,6 +107,16 @@
         window.location.replace(appUrl);
       }
       retryButton.addEventListener("click", retry);
+      const nativeLogin = document.getElementById("native-login");
+      if (/VeloxionNativeAuth\/1/.test(navigator.userAgent)) {
+        nativeLogin.hidden = false;
+        if (isEuro) nativeLogin.textContent = "Back to sign in";
+        nativeLogin.addEventListener("click", async () => {
+          const bridge = window.Capacitor;
+          const auth = bridge?.Plugins?.VeloxionAuth || bridge?.registerPlugin?.("VeloxionAuth");
+          if (auth) await auth.showLogin({ clearSession: false }).catch(() => undefined);
+        });
+      }
       window.addEventListener("online", () => setTimeout(retry, 250), { once: true });
     </script>
   </body>

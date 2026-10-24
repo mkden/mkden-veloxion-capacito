@@ -6,6 +6,7 @@ android/capacitor-cordova-android-plugins/build/
 android/local.properties
 .gradle-user/
 .gradle-local/
+build-local/
 ios/App/Pods/
 ios/App/DerivedData/
 ios/App/App.xcworkspace/xcuserdata/

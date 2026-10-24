@@ -1,0 +1,69 @@
+package io.veloxion.app;
+
+import android.content.Intent;
+import android.net.Uri;
+import com.getcapacitor.*;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import org.json.JSONObject;
+
+@CapacitorPlugin(name = "VeloxionAuth")
+public class NativeAuthPlugin extends Plugin {
+    private final java.util.concurrent.ExecutorService worker=java.util.concurrent.Executors.newSingleThreadExecutor();
+    private boolean trusted() {
+        String current=getBridge().getWebView().getUrl();
+        if (current==null) return false;
+        Uri uri=Uri.parse(current);
+        String host=new NativeAuthApi(getContext()).euro?"veloxion.eu":"veloxion.io";
+        return "https".equals(uri.getScheme()) && (uri.getPort()==-1 || uri.getPort()==443)
+            && (host.equals(uri.getHost()) || ("www."+host).equals(uri.getHost()));
+    }
+    @PluginMethod public void getSession(PluginCall call) {
+        getActivity().runOnUiThread(() -> getSessionOnMain(call));
+    }
+    private void getSessionOnMain(PluginCall call) {
+        if (!trusted()) { call.reject("Untrusted origin"); return; }
+        JSONObject saved=new AuthSessionStore(getContext()).read();
+        JSObject result=new JSObject(); result.put("accessToken",saved==null?"":saved.optString("accessToken"));
+        boolean allowWeb=getActivity().getIntent().getBooleanExtra("webAuthAllowed",false);
+        result.put("webAuthAllowed",allowWeb);
+        result.put("beginWebAuth",allowWeb && !getActivity().getIntent().getBooleanExtra("webAuthStarted",false));
+        if (allowWeb) getActivity().getIntent().putExtra("webAuthStarted",true);
+        call.resolve(result);
+    }
+    @PluginMethod public void adoptSession(PluginCall call) {
+        getActivity().runOnUiThread(() -> adoptSessionOnMain(call));
+    }
+    private void adoptSessionOnMain(PluginCall call) {
+        if (!trusted()) { call.reject("Untrusted origin"); return; }
+        String token=call.getString("accessToken", "");
+        int revision=AuthSessionStore.revision.get();
+        worker.execute(() -> {
+            try {
+                NativeAuthApi api=new NativeAuthApi(getContext()); api.validate(token);
+                AuthSessionStore store=new AuthSessionStore(getContext()); JSONObject previous=store.read();
+                JSONObject session=new JSONObject().put("accessToken",token).put("refreshToken",previous!=null && token.equals(previous.optString("accessToken"))?previous.optString("refreshToken"):"");
+                store.save(session,revision);
+                getActivity().runOnUiThread(() -> { getActivity().getIntent().putExtra("webAuthAllowed",false); call.resolve(); });
+            } catch (Exception ignored) { call.reject("Could not validate session"); }
+        });
+    }
+    @PluginMethod public void showLogin(PluginCall call) {
+        getActivity().runOnUiThread(() -> showLoginOnMain(call));
+    }
+    private void showLoginOnMain(PluginCall call) {
+        // The bundled error page may return to the native form, but may never read a token.
+        String url=getBridge().getWebView().getUrl();
+        boolean local=url!=null && (url.startsWith("https://localhost/") || url.startsWith("http://localhost/"));
+        if (!trusted() && !local) { call.reject("Untrusted origin"); return; }
+        if (Boolean.TRUE.equals(call.getBoolean("clearSession",false))) {
+            new AuthSessionStore(getContext()).clear();
+            android.webkit.CookieManager.getInstance().removeAllCookies(null);
+            android.webkit.CookieManager.getInstance().flush();
+        }
+        getActivity().runOnUiThread(() -> {
+            getActivity().startActivity(new Intent(getActivity(),NativeAuthActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK));
+            call.resolve(); getActivity().finish();
+        });
+    }
+    @Override protected void handleOnDestroy() { worker.shutdownNow(); }
+}
