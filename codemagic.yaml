@@ -8,7 +8,7 @@ workflows:
     environment:
       node: 22
       groups:
-        - appstore_credentials
+        - veloxion_testflight_20261024
       vars:
         VELOXION_APP_REGION: euro
       # Import the existing team certificate; only the downloaded EURO profile is applied below.
@@ -36,7 +36,9 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
         submit_to_app_store: false
   ios-rus-testflight:
@@ -48,7 +50,7 @@ workflows:
     environment:
       node: 22
       groups:
-        - appstore_credentials
+        - veloxion_testflight_20261024
         - firebase_credentials
       vars:
         VELOXION_APP_REGION: rus
@@ -81,7 +83,9 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
         submit_to_app_store: false
   ios-euro-iap-setup:

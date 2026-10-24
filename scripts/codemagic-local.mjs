@@ -6,6 +6,40 @@ import { pathToFileURL } from 'node:url';
 export const CODEMAGIC_APP_ID = '6a7099c79158da398bcfb28e';
 export const CODEMAGIC_BRANCH = 'feature/ios-euro-app';
 const ORIGIN = 'https://api.codemagic.io';
+export const TESTFLIGHT_GROUP = 'veloxion_testflight_20261024';
+
+export async function configureTestFlightCredentials({ token, credentials, fetchImpl = fetch }) {
+  const origin = 'https://codemagic.io';
+  async function request(path, method = 'GET', body) {
+    let response;
+    try {
+      response = await fetchImpl(origin + path, { method, redirect: 'error', signal: AbortSignal.timeout(30000),
+        headers: { 'x-auth-token': token, Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {}) });
+    } catch { throw new Error('Codemagic credential configuration request failed; inspect the group before retrying.'); }
+    if (!response.ok) throw new Error(`Codemagic credential configuration HTTP ${response.status}. No private values were logged.`);
+    return response.status === 201 && path.endsWith('/variables') ? null : response.json();
+  }
+  const path = `/api/v3/apps/${CODEMAGIC_APP_ID}/variable-groups`;
+  const groups = (await request(path + '?page_size=100')).data;
+  const matches = groups.filter(group => group.name === TESTFLIGHT_GROUP);
+  if (matches.length > 1) throw new Error('Duplicate TestFlight credential groups; configuration stopped.');
+  const group = matches[0] || (await request(path, 'POST', { name: TESTFLIGHT_GROUP })).data;
+  if (!/^[a-f0-9]{24}$/i.test(group?.id || '')) throw new Error('Codemagic did not confirm the credential group.');
+  const variablesPath = `/api/v3/variable-groups/${group.id}/variables`;
+  let variables = (await request(variablesPath + '?page_size=100')).data;
+  const names = ['APP_STORE_CONNECT_KEY_IDENTIFIER', 'APP_STORE_CONNECT_ISSUER_ID', 'APP_STORE_CONNECT_PRIVATE_KEY'];
+  if (!variables.length) {
+    // Export directly into the trusted CI secret store, never into logs or repository files.
+    const values = [credentials.keyId, credentials.issuerId, credentials.privateKey.export({ format: 'pem', type: 'pkcs8' }).toString()];
+    await request(variablesPath, 'POST', { secure: true, variables: names.map((name, index) => ({ name, value: values[index] })) });
+    variables = (await request(variablesPath + '?page_size=100')).data;
+  }
+  if (variables.length !== names.length || names.some(name => !variables.some(v => v.name === name && v.secure === true))) {
+    throw new Error('Incomplete or non-secret TestFlight credentials; existing variables were not overwritten.');
+  }
+  return { success: true, group: TESTFLIGHT_GROUP, groupId: group.id, secretNames: names };
+}
 
 export function readToken(env = process.env) {
   if (!env.CONNECTOR_ENV_PATH) throw new Error('Run connect-codemagic.ps1 to configure private local access.');

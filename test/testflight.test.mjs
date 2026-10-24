@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { APPS, nextBuildNumber } from '../scripts/ci-testflight-prepare.mjs';
-import { CODEMAGIC_APP_ID, CODEMAGIC_BRANCH, createCodemagicClient } from '../scripts/codemagic-local.mjs';
+import { CODEMAGIC_APP_ID, CODEMAGIC_BRANCH, TESTFLIGHT_GROUP, configureTestFlightCredentials, createCodemagicClient } from '../scripts/codemagic-local.mjs';
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 
 function workflow(name) {
@@ -21,6 +21,9 @@ test('TestFlight uploads are manual, isolated by region and cannot submit to eit
     assert.match(text, new RegExp(`--profile .*${region}\\.mobileprovision`));
     assert.match(text, new RegExp(`verify-ios-ipa.mjs ${region}`));
     assert.match(text, /publishing:/);
+    assert.ok(text.includes(TESTFLIGHT_GROUP));
+    assert.match(text, /api_key: \$APP_STORE_CONNECT_PRIVATE_KEY/);
+    assert.doesNotMatch(text, /- appstore_credentials|auth: integration/);
     assert.match(text, /submit_to_app_store: false/);
     assert.match(text, /submit_to_testflight: false/);
     assert.doesNotMatch(text, /triggering:|pattern: main|beta_groups:|expire_build_submitted_for_review: true/);
@@ -60,4 +63,20 @@ test('Codemagic token is never sent to foreign hosts and only two approved build
 test('Codemagic errors never print the server body or token', async () => {
   const client = createCodemagicClient({ token: 'fixture-secret-token', fetchImpl: async () => new Response('sensitive-server-body', { status: 403 }) });
   await assert.rejects(client.request('/apps/' + CODEMAGIC_APP_ID), error => !error.message.includes('fixture-secret-token') && !error.message.includes('sensitive-server-body'));
+});
+
+test('new Apple credentials are scoped to an isolated app group and stored as secrets', async () => {
+  const calls = [];
+  const names = ['APP_STORE_CONNECT_KEY_IDENTIFIER', 'APP_STORE_CONNECT_ISSUER_ID', 'APP_STORE_CONNECT_PRIVATE_KEY'];
+  const results = [{ data: [] }, { data: { id: 'b'.repeat(24), name: TESTFLIGHT_GROUP } }, { data: [] }, null,
+    { data: names.map(name => ({ name, secure: true, value: null })) }];
+  const report = await configureTestFlightCredentials({ token: 'fixture-token', credentials: { keyId: 'fixture-id', issuerId: 'fixture-issuer', privateKey: { export: () => 'fixture-private-pem' } },
+    fetchImpl: async (url, options) => { calls.push({ url, options }); const value = results.shift(); return new Response(value === null ? null : JSON.stringify(value), { status: value === null ? 201 : 200 }); } });
+  assert.equal(calls.length, 5);
+  assert.ok(calls.every(call => new URL(call.url).origin === 'https://codemagic.io' && call.options.redirect === 'error'));
+  assert.equal(JSON.parse(calls[1].options.body).name, TESTFLIGHT_GROUP);
+  const imported = JSON.parse(calls[3].options.body);
+  assert.equal(imported.secure, true);
+  assert.deepEqual(imported.variables.map(v => v.name), names);
+  assert.ok(!JSON.stringify(report).includes('fixture-private-pem'));
 });
