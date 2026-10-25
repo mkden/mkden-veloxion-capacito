@@ -22,14 +22,18 @@ public final class NativeOAuthFlow {
     }
     private static String random() { byte[] bytes=new byte[32]; new SecureRandom().nextBytes(bytes); return encode(bytes); }
     public NativeOAuthFlow(String bundle, int revision, long createdAt) throws Exception {
+        this(bundle,bundle.equals("eu.veloxion.app")?"google":"yandex",revision,createdAt);
+    }
+    public NativeOAuthFlow(String bundle, String selectedProvider, int revision, long createdAt) throws Exception {
         if (!bundle.equals("eu.veloxion.app") && !bundle.equals("io.veloxion.app")) throw new IllegalArgumentException("Unknown region");
-        scheme=bundle; provider=bundle.equals("eu.veloxion.app")?"google":"yandex";
+        if (bundle.equals("eu.veloxion.app") ? !selectedProvider.equals("google") : !selectedProvider.equals("yandex") && !selectedProvider.equals("vk")) throw new IllegalArgumentException("Invalid provider");
+        scheme=bundle; provider=selectedProvider;
         this.revision=revision; this.createdAt=createdAt; state=random(); verifier=random();
         challenge=encode(MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII)));
     }
     public URI authorization(String raw) throws Exception {
         URI url=new URI(raw);
-        String host=provider.equals("google")?"accounts.google.com":"oauth.yandex.ru";
+        String host=provider.equals("google")?"accounts.google.com":provider.equals("vk")?"id.vk.com":"oauth.yandex.ru";
         String path=provider.equals("google")?"/o/oauth2/v2/auth":"/authorize";
         if (!"https".equals(url.getScheme()) || !host.equals(url.getHost()) || !path.equals(url.getPath())
             || url.getUserInfo()!=null || (url.getPort()!=-1 && url.getPort()!=443) || url.getFragment()!=null) throw new IllegalArgumentException("Invalid provider URL");

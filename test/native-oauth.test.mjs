@@ -12,7 +12,7 @@ test('native OAuth proof and callback guards execute independently of Android', 
   mkdirSync(join(root, 'build-local'), { recursive: true });
   const dir = mkdtempSync(join(root, 'build-local/oauth-test-'));
   try {
-    execFileSync(join(bin, 'javac'), ['-d', dir, join(root, 'android/app/src/main/java/io/veloxion/app/NativeOAuthFlow.java'), join(root, 'test/NativeOAuthFlowTests.java')]);
+    execFileSync(join(bin, 'javac'), ['-d', dir, join(root, 'android/app/src/main/java/io/veloxion/app/NativeOAuthFlow.java'), join(root, 'android/app/src/main/java/io/veloxion/app/NativeAuthLocale.java'), join(root, 'test/NativeOAuthFlowTests.java')]);
     assert.match(execFileSync(join(bin, 'java'), ['-cp', dir, 'NativeOAuthFlowTests'], { encoding: 'utf8' }), /region isolation passed/);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

@@ -19,10 +19,10 @@ workflows:
       - name: Install, test and prepare EURO
         script: |
           npm ci
-          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs
           swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
           /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
-          swiftc ios/App/App/NativeOAuthFlow.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
+          swiftc ios/App/App/NativeOAuthFlow.swift ios/App/App/NativeAuthLocale.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
           /tmp/veloxion-oauth-tests
           node scripts/prepare-ios-region.mjs euro
           npx cap sync ios
@@ -66,10 +66,10 @@ workflows:
       - name: Install, test and prepare RUS
         script: |
           npm ci
-          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs
           swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
           /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
-          swiftc ios/App/App/NativeOAuthFlow.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
+          swiftc ios/App/App/NativeOAuthFlow.swift ios/App/App/NativeAuthLocale.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
           /tmp/veloxion-oauth-tests
           node scripts/prepare-ios-region.mjs rus
           test -n "$VELOXION_RUS_FIREBASE_PLIST"

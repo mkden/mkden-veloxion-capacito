@@ -28,6 +28,15 @@ import CryptoKit
             rejects { try flow.authorization(authorization.replacingOccurrences(of: "https:", with: "http:")) }
             rejects { try flow.authorization(authorization.replacingOccurrences(of: ".com/", with: ".com.evil.invalid/").replacingOccurrences(of: ".ru/", with: ".ru.evil.invalid/")) }
         }
+        let vk = try NativeOAuthFlow(bundle: "io.veloxion.app", selectedProvider: "vk")
+        _ = try vk.authorization("https://id.vk.com/authorize")
+        rejects { try vk.authorization("https://oauth.yandex.ru/authorize") }
+        rejects { try NativeOAuthFlow(bundle: "eu.veloxion.app", selectedProvider: "vk") }
+        rejects { try NativeOAuthFlow(bundle: "io.veloxion.app", selectedProvider: "google") }
+        for code in NativeAuthLocale.codes { precondition(NativeAuthLocale.resolve(saved: code, device: "ru-RU") == code) }
+        precondition(NativeAuthLocale.resolve(saved: "ru", device: "ru-RU") == "en")
+        precondition(NativeAuthLocale.resolve(saved: nil, device: "de-DE") == "de")
+        precondition(NativeAuthLocale.resolve(saved: "bad", device: "zh_Hans_CN") == "zh")
         print("Swift OAuth: PKCE, state, callbacks, errors and region isolation passed")
     }
 }

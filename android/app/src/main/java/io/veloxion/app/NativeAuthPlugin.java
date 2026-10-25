@@ -20,6 +20,20 @@ public class NativeAuthPlugin extends Plugin {
     @PluginMethod public void getSession(PluginCall call) {
         getActivity().runOnUiThread(() -> getSessionOnMain(call));
     }
+    @PluginMethod public void getLocale(PluginCall call) {
+        getActivity().runOnUiThread(()->{
+            if (!trusted()) { call.reject("Untrusted origin"); return; }
+            String locale=new NativeAuthApi(getContext()).euro?NativeAuthLocale.resolve(getContext().getSharedPreferences(NativeAuthLocale.PREFERENCES,0).getString(NativeAuthLocale.KEY,""),java.util.Locale.getDefault().toLanguageTag()):"ru";
+            JSObject result=new JSObject(); result.put("locale",locale); call.resolve(result);
+        });
+    }
+    @PluginMethod public void setLocale(PluginCall call) {
+        getActivity().runOnUiThread(()->{
+            String locale=call.getString("locale","");
+            if (!trusted() || !new NativeAuthApi(getContext()).euro || !NativeAuthLocale.supported(locale)) { call.reject("Invalid locale or origin"); return; }
+            getContext().getSharedPreferences(NativeAuthLocale.PREFERENCES,0).edit().putString(NativeAuthLocale.KEY,locale).apply(); call.resolve();
+        });
+    }
     private void getSessionOnMain(PluginCall call) {
         if (!trusted()) { call.reject("Untrusted origin"); return; }
         JSONObject saved=new AuthSessionStore(getContext()).read();

@@ -8,9 +8,24 @@ public final class NativeAuthPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "VeloxionAuth"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getLocale", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setLocale", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "adoptSession", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showLogin", returnType: CAPPluginReturnPromise)
     ]
+    @objc public func getLocale(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [self] in
+            guard NativeAuthRegion().trusts(webView?.url) else { call.reject("Untrusted origin"); return }
+            call.resolve(["locale": NativeAuthRegion().euro ? NativeAuthLocale.current : "ru"])
+        }
+    }
+    @objc public func setLocale(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [self] in
+            guard NativeAuthRegion().trusts(webView?.url), NativeAuthRegion().euro,
+                  let locale = call.getString("locale"), NativeAuthLocale.codes.contains(locale) else { call.reject("Invalid locale or origin"); return }
+            UserDefaults.standard.set(locale, forKey: NativeAuthLocale.key); call.resolve()
+        }
+    }
     @objc public func getSession(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [self] in
             guard NativeAuthRegion().trusts(webView?.url) else { call.reject("Untrusted origin"); return }

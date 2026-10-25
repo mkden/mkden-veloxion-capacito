@@ -106,9 +106,17 @@ require a working internet connection. Requests are never queued for later.
   Existing email/password accounts have a separate sign-in option.
 - EURO: email/password sign-in; registration requires a name, repeated password,
   consent and an email verification code.
-- Google (EURO) and Yandex ID (RUS) have native buttons with a system-browser
-  OAuth flow. Remaining providers retain the explicitly chosen online web flow.
+- Google (EURO), Yandex ID and VK ID (RUS) have native buttons with a system-browser
+  OAuth flow. VK ID uses provider PKCE and the existing registered website `/auth`
+  redirect; only native states are forwarded to the backend native callback.
   These are not Google/VK/Yandex native SDK account-picker integrations.
+- EURO offers the same seven languages as the workspace: English, German, Italian,
+  Spanish, French, Polish and Chinese. Russian is not an option; unsupported device
+  languages fall back to English. All form/error translations are bundled offline.
+  Switching languages preserves inputs, consent and OTP state. The selected language
+  is saved on-device and synchronized with the workspace through dedicated,
+  origin-restricted `getLocale`/`setLocale` methods, not session/token callbacks.
+  The native EURO brand subtitle starts with `EU /`.
 - Code resends have a minimum 60-second cooldown. Mutating auth requests are not
   automatically retried. Errors are translated, without displaying server internals.
 - Access/refresh tokens are kept in device-only Keychain on iOS and AES-GCM storage
@@ -131,6 +139,10 @@ Deploy `lib/native-auth.ts`, `components/native-session-gate.tsx`, `lib/api.ts`
 and `app/layout.tsx` to each matching frontend first. Old installed apps and normal
 browsers retain web authentication; the new gate is enabled by the new app user
 agent marker `VeloxionNativeAuth/1`. No database migration or new auth API is needed.
+
+For the VK/language update deploy the RUS native OAuth broker, RUS `/auth` forwarding
+and response headers, and EURO locale provider/native bridge types before the apps.
+No database migration, provider-key change or balance change is required.
 
 Then build the matching RUS/EURO Android app and both iOS TestFlight workflows.
 Do not distribute a new native build against an old frontend: it cannot receive

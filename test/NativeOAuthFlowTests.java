@@ -1,4 +1,5 @@
 import io.veloxion.app.NativeOAuthFlow;
+import io.veloxion.app.NativeAuthLocale;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -31,6 +32,16 @@ public final class NativeOAuthFlowTests {
             rejects(()->flow.authorization(authorize.replace("https:","http:")));
             rejects(()->flow.authorization(authorize.replace(".com/",".com.evil.invalid/").replace(".ru/",".ru.evil.invalid/")));
         }
+        NativeOAuthFlow vk=new NativeOAuthFlow("io.veloxion.app","vk",7,123);
+        check(vk.authorization("https://id.vk.com/authorize").getHost().equals("id.vk.com"));
+        rejects(()->vk.authorization("https://oauth.yandex.ru/authorize"));
+        rejects(()->new NativeOAuthFlow("eu.veloxion.app","vk",7,123));
+        rejects(()->new NativeOAuthFlow("io.veloxion.app","google",7,123));
+        for (String code:NativeAuthLocale.CODES) check(NativeAuthLocale.resolve(code,"ru-RU").equals(code));
+        check(NativeAuthLocale.resolve("ru","ru-RU").equals("en"));
+        check(NativeAuthLocale.resolve("","de-DE").equals("de"));
+        check(NativeAuthLocale.resolve("bad","zh_Hans_CN").equals("zh"));
+        check(NativeAuthLocale.resolve("fr","de-DE").equals("fr"));
         System.out.println("Java OAuth: PKCE, state, callbacks, errors and region isolation passed");
     }
 }

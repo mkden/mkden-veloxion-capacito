@@ -32,6 +32,12 @@ public class NativeAuthActivity extends AppCompatActivity {
     private NativeAuthApi api;
     private AuthSessionStore store;
     private JSONObject strings;
+    private JSONObject locales;
+    private String locale;
+    private final java.util.Map<TextView,String> translations=new java.util.HashMap<>();
+    private final java.util.Map<EditText,String> fieldKeys=new java.util.HashMap<>();
+    private TextView brandSubtitle;
+    private Spinner languagePicker;
     private LinearLayout content;
     private final java.util.Map<EditText, LinearLayout> rows = new java.util.HashMap<>();
     private Typeface font, strongFont;
@@ -40,7 +46,7 @@ public class NativeAuthActivity extends AppCompatActivity {
     private CheckBox consent;
     private TextView notice;
     private Button submit, resend, back, loginTab, registerTab, emailMode;
-    private Button providerButton;
+    private Button providerButton, vkButton;
     private TextView providerOr;
     private NativeOAuthFlow oauthFlow;
     private boolean oauthLeft;
@@ -56,8 +62,15 @@ public class NativeAuthActivity extends AppCompatActivity {
             java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
             byte[] buffer = new byte[4096]; int count;
             while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
-            JSONObject locales = new JSONObject(output.toString("UTF-8"));
-            strings = locales.getJSONObject(!api.euro || Locale.getDefault().getLanguage().equals("ru") ? "ru" : "en");
+            locales = new JSONObject(output.toString("UTF-8"));
+            if (api.euro) try (java.io.InputStream extra=getAssets().open("public/native-auth-euro.json")) {
+                java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream();
+                while ((count=extra.read(buffer))!=-1) data.write(buffer,0,count);
+                JSONObject additional=new JSONObject(data.toString("UTF-8"));
+                for (String key:NativeAuthLocale.CODES) if (additional.has(key)) locales.put(key,additional.getJSONObject(key));
+            }
+            locale=api.euro?NativeAuthLocale.resolve(getSharedPreferences(NativeAuthLocale.PREFERENCES,MODE_PRIVATE).getString(NativeAuthLocale.KEY,""),Locale.getDefault().toLanguageTag()):"ru";
+            strings = locales.getJSONObject(locale);
         } catch (Exception error) { throw new IllegalStateException("Bundled authentication translations are missing", error); }
         build();
         if (isProviderCallback(getIntent())) showNotice(t("expired"));
@@ -83,7 +96,7 @@ public class NativeAuthActivity extends AppCompatActivity {
         view.setPadding(dp(16),dp(14),dp(16),dp(14));
         GradientDrawable bg = background(Color.WHITE, 14); bg.setStroke(dp(1), Color.rgb(168,198,214)); view.setBackground(bg);
         row.addView(view,new LinearLayout.LayoutParams(-1,-2)); content.addView(row); rows.put(view,row);
-        controls.add(view); return view;
+        translations.put(label,key); fieldKeys.put(view,key); controls.add(view); return view;
     }
     private Button button(String key, Runnable action, boolean primary) {
         Button view = new Button(this); view.setText(t(key)); view.setAllCaps(false); view.setTextSize(15);
@@ -94,7 +107,7 @@ public class NativeAuthActivity extends AppCompatActivity {
             new int[]{Color.rgb(17,178,216),Color.rgb(110,91,226),Color.rgb(184,66,175)}) : background(Color.rgb(242,248,252),14);
         bg.setCornerRadius(dp(primary?27:14)); view.setBackgroundTintList(null); view.setBackground(bg);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1,-2); params.topMargin=dp(12);
-        content.addView(view,params); controls.add(view); view.setOnClickListener(v -> { if (!busy) action.run(); }); return view;
+        content.addView(view,params); translations.put(view,key); controls.add(view); view.setOnClickListener(v -> { if (!busy) action.run(); }); return view;
     }
     private void build() {
         try {
@@ -122,8 +135,22 @@ public class NativeAuthActivity extends AppCompatActivity {
         try (java.io.InputStream image=getAssets().open("public/veloxion-logo.png")) { logo.setImageBitmap(BitmapFactory.decodeStream(image)); } catch (Exception ignored) {}
         brand.addView(logo,new LinearLayout.LayoutParams(dp(48),dp(48)));
         content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(dp(12),0,0,0);
-        text("Veloxion AI",18,true); TextView subtitle=text(api.euro?"EUROPE / "+t("brandSubtitle"):t("brandSubtitle"),11,false); subtitle.setTextColor(0xff61718b);
+        text("Veloxion AI",18,true); brandSubtitle=text(api.euro?"EU / "+t("brandSubtitle"):t("brandSubtitle"),11,false); brandSubtitle.setTextColor(0xff61718b);
         brand.addView(content,new LinearLayout.LayoutParams(0,-2,1)); outer.addView(brand);
+        if (api.euro) {
+            languagePicker=new Spinner(this); languagePicker.setContentDescription(t("language"));
+            ArrayAdapter<String> adapter=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,NativeAuthLocale.LABELS);
+            languagePicker.setAdapter(adapter); languagePicker.setBackground(background(0xe6ffffff,14));
+            languagePicker.setMinimumHeight(dp(48)); languagePicker.setMinimumWidth(dp(104));
+            languagePicker.setSelection(java.util.Arrays.asList(NativeAuthLocale.CODES).indexOf(locale));
+            brand.addView(languagePicker,new LinearLayout.LayoutParams(-2,-2)); controls.add(languagePicker);
+            languagePicker.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                public void onNothingSelected(AdapterView<?> parent) {}
+                public void onItemSelected(AdapterView<?> parent,View view,int position,long id) {
+                    if (!busy && oauthFlow==null) changeLanguage(NativeAuthLocale.CODES[position]);
+                }
+            });
+        }
         content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(dp(20),dp(20),dp(20),dp(20));
         GradientDrawable card=background(0xf5ffffff,26); card.setStroke(dp(1),0xffa3c3d4); content.setBackground(card); content.setElevation(dp(3));
         LinearLayout.LayoutParams cardLayout=new LinearLayout.LayoutParams(-1,-2); cardLayout.topMargin=dp(22); cardLayout.bottomMargin=dp(16); outer.addView(content,cardLayout);
@@ -138,13 +165,17 @@ public class NativeAuthActivity extends AppCompatActivity {
             tab.setOnClickListener(v -> selectMode(registration)); tabs.addView(tab,new LinearLayout.LayoutParams(0,-2,1)); controls.add(tab);
         }
         LinearLayout.LayoutParams tabLayout=new LinearLayout.LayoutParams(-1,-2); tabLayout.topMargin=dp(16); tabLayout.bottomMargin=dp(4); content.addView(tabs,tabLayout);
-        providerButton=button(api.euro?"googleLogin":"yandexLogin",this::startProvider,false);
+        providerButton=button(api.euro?"googleLogin":"yandexLogin",()->startProvider(api.euro?"google":"yandex"),false);
         GradientDrawable providerBackground=background(Color.WHITE,14); providerBackground.setStroke(dp(1),0xffa8c6d6); providerButton.setBackground(providerBackground);
         if (api.euro) try (java.io.InputStream input=getAssets().open("public/google-g.png")) {
             android.graphics.drawable.BitmapDrawable logoDrawable=new android.graphics.drawable.BitmapDrawable(getResources(),BitmapFactory.decodeStream(input));
             logoDrawable.setBounds(0,0,dp(20),dp(20)); providerButton.setCompoundDrawablesRelative(logoDrawable,null,null,null); providerButton.setCompoundDrawablePadding(dp(12));
         } catch (Exception ignored) {}
-        providerOr=text(t("providerOr"),12,false); providerOr.setGravity(android.view.Gravity.CENTER); providerOr.setTextColor(0xff61718b);
+        if (!api.euro) {
+            vkButton=button("vkLogin",()->startProvider("vk"),false);
+            vkButton.setTextColor(Color.WHITE); vkButton.setBackground(background(0xff0077ff,14));
+        }
+        providerOr=text(t("providerOr"),12,false); translations.put(providerOr,"providerOr"); providerOr.setGravity(android.view.Gravity.CENTER); providerOr.setTextColor(0xff61718b);
         name = field("name", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         identity = field(api.euro ? "email" : "phone", api.euro ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS : InputType.TYPE_CLASS_PHONE);
         identityLabel=(TextView)rows.get(identity).getChildAt(0);
@@ -163,14 +194,14 @@ public class NativeAuthActivity extends AppCompatActivity {
         code = field("code", InputType.TYPE_CLASS_NUMBER);
         code.setAutofillHints("smsOTPCode");
         consent = new CheckBox(this); consent.setText(t("consent")); consent.setTypeface(font); consent.setTextSize(13); consent.setChecked(false); consent.setTextColor(0xff344963); consent.setPadding(0,dp(12),0,dp(8)); consent.setMinHeight(dp(48));
-        content.addView(consent); controls.add(consent);
+        content.addView(consent); translations.put(consent,"consent"); controls.add(consent);
         LinearLayout legal = new LinearLayout(this); legal.setOrientation(LinearLayout.HORIZONTAL);
         String[] keys={"rules","privacy","offer"};
         String[] paths=api.euro ? new String[]{"/service-rules","/privacy-policy","/offer-terms"} : new String[]{"/pravila-servisa","/politika-konfidentsialnosti","/publichnaya-oferta"};
         for (int i=0;i<keys.length;i++) {
             TextView link = new TextView(this); link.setText(t(keys[i]+"Short")); link.setContentDescription(t(keys[i])); link.setTypeface(font); link.setGravity(android.view.Gravity.CENTER); link.setMinHeight(dp(44)); link.setTextColor(0xff276b94); link.setTextSize(12); link.setPadding(dp(2),dp(12),dp(2),dp(12));
             final String path=paths[i]; link.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(api.origin+path))));
-            legal.addView(link,new LinearLayout.LayoutParams(0,-2,1));
+            translations.put(link,keys[i]+"Short"); link.setTag(keys[i]); legal.addView(link,new LinearLayout.LayoutParams(0,-2,1));
         }
         content.addView(legal);
         notice = text("",13,false); notice.setPadding(dp(12),dp(12),dp(12),dp(12)); notice.setBackground(background(0xffeaf5fb,12)); notice.setVisibility(View.GONE); notice.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
@@ -180,7 +211,20 @@ public class NativeAuthActivity extends AppCompatActivity {
         button("retry", this::restore, false);
         emailMode = button("emailLogin", () -> { emailLogin=!emailLogin; resetCode(); identity.setText(""); password.setText(""); update(); }, false);
         button("other", () -> run(form -> { api.checkSite(); return null; }, ignored -> openWorkspace(true)), false);
-        content=outer; TextView offline=text(t("offlineHint"),12,false); offline.setTextColor(0xff61718b); TextView secure=text(t("secure"),11,false); secure.setTextColor(0xff61718b); update();
+        content=outer; TextView offline=text(t("offlineHint"),12,false); translations.put(offline,"offlineHint"); offline.setTextColor(0xff61718b); TextView secure=text(t("secure"),11,false); translations.put(secure,"secure"); secure.setTextColor(0xff61718b); update();
+    }
+
+    private void changeLanguage(String next) {
+        if (!api.euro || next.equals(locale) || !NativeAuthLocale.supported(next) || busy || oauthFlow!=null) return;
+        String noticeKey="";
+        for (java.util.Iterator<String> keys=strings.keys();keys.hasNext();) { String key=keys.next(); if (t(key).contentEquals(notice.getText())) noticeKey=key; }
+        locale=next; strings=locales.optJSONObject(next);
+        getSharedPreferences(NativeAuthLocale.PREFERENCES,MODE_PRIVATE).edit().putString(NativeAuthLocale.KEY,next).apply();
+        translations.forEach((view,key)->{ view.setText(t(key)); if (view.getTag() instanceof String) view.setContentDescription(t((String)view.getTag())); });
+        fieldKeys.forEach((view,key)->view.setHint(t(key)));
+        loginTab.setText(t("login")); registerTab.setText(t("register")); brandSubtitle.setText("EU / "+t("brandSubtitle")); languagePicker.setContentDescription(t("language"));
+        if (!noticeKey.isEmpty()) showNotice(t(noticeKey));
+        update();
     }
 
     private void selectMode(boolean registration) {
@@ -238,6 +282,7 @@ public class NativeAuthActivity extends AppCompatActivity {
         boolean editable=!busy && oauthFlow==null;
         controls.forEach(v->v.setEnabled(editable));
         providerButton.setVisibility(codeStep?View.GONE:View.VISIBLE); providerOr.setVisibility(codeStep?View.GONE:View.VISIBLE);
+        if (vkButton!=null) vkButton.setVisibility(codeStep?View.GONE:View.VISIBLE);
         heading.setText(t(codeStep?"codeTitle":registering?"registerTitle":"loginTitle")); intro.setText(t(codeStep?"sent":registering?"registerIntro":"loginIntro"));
         loginTab.setSelected(!registering); registerTab.setSelected(registering);
         for (Button tab:new Button[]{loginTab,registerTab}) { tab.setBackground(background(tab.isSelected()?Color.WHITE:Color.TRANSPARENT,20)); tab.setTextColor(tab.isSelected()?0xff14233a:0xff61718b); }
@@ -249,12 +294,12 @@ public class NativeAuthActivity extends AppCompatActivity {
         submit.setText(t(codeStep?"continue":usesEmail()&&!registering?"login":"send"));
         identity.setEnabled(editable && !codeStep); name.setEnabled(editable && !codeStep);
     }
-    private void startProvider() {
+    private void startProvider(String provider) {
         if (busy || oauthFlow!=null) return;
         if (registering && !consent.isChecked()) { showNotice(t("invalidConsent")); return; }
         final NativeOAuthFlow flow; final JSONObject body;
         try {
-            flow=new NativeOAuthFlow(getPackageName(),AuthSessionStore.revision.get(),SystemClock.elapsedRealtime());
+            flow=new NativeOAuthFlow(getPackageName(),provider,AuthSessionStore.revision.get(),SystemClock.elapsedRealtime());
             body=new JSONObject().put("provider",flow.provider).put("platform","android").put("state",flow.state)
                 .put("codeChallenge",flow.challenge).put("intent",registering?"register":"login").put("termsAccepted",registering && consent.isChecked());
         } catch (Exception ignored) { showNotice(t("server")); return; }

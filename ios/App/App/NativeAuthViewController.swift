@@ -60,6 +60,11 @@ import AuthenticationServices
     private var fieldLabels: [ObjectIdentifier: UILabel] = [:]
     private let notice = UILabel()
     private let providerButton = UIButton(type: .system), providerOr = UILabel()
+    private let vkButton = UIButton(type: .system), languageButton = UIButton(type: .system), brandSubtitle = UILabel()
+    private var translatedLabels: [UILabel: String] = [:], translatedButtons: [UIButton: String] = [:]
+    private var fieldKeys: [UITextField: String] = [:]
+    private var dictionaries: [String: [String: String]] = [:]
+    private var locale = "en"
     private var providerFlow: NativeOAuthFlow?
     private var webAuthentication: ASWebAuthenticationSession?
     private let loginTab = UIButton(type: .system), registerTab = UIButton(type: .system), submit = AuthPrimaryButton(frame: .zero), resend = UIButton(type: .system), back = UIButton(type: .system), emailMode = UIButton(type: .system)
@@ -77,10 +82,19 @@ import AuthenticationServices
     override func viewDidLoad() {
         super.viewDidLoad()
         guard let url = Bundle.main.url(forResource: "native-auth", withExtension: "json", subdirectory: "public"),
-              let data = try? Data(contentsOf: url), let locales = try? JSONSerialization.jsonObject(with: data) as? [String: [String: String]],
-              let labels = locales[!api.region.euro || Locale.preferredLanguages.first?.hasPrefix("ru") == true ? "ru" : "en"] else {
+              let data = try? Data(contentsOf: url), let locales = try? JSONSerialization.jsonObject(with: data) as? [String: [String: String]] else {
             preconditionFailure("Bundled authentication translations are missing")
         }
+        dictionaries = locales
+        if api.region.euro {
+            guard let url = Bundle.main.url(forResource: "native-auth-euro", withExtension: "json", subdirectory: "public"),
+                  let data = try? Data(contentsOf: url), let extra = try? JSONSerialization.jsonObject(with: data) as? [String: [String: String]] else {
+                preconditionFailure("Bundled EURO translations are missing")
+            }
+            dictionaries.merge(extra) { _, new in new }
+        }
+        locale = api.region.euro ? NativeAuthLocale.current : "ru"
+        guard let labels = dictionaries[locale] else { preconditionFailure("Missing authentication language") }
         strings = labels
         overrideUserInterfaceStyle = .light
         let backdrop = AuthBackground(frame: view.bounds); backdrop.autoresizingMask = [.flexibleWidth, .flexibleHeight]; view.insertSubview(backdrop, at: 0)
@@ -103,8 +117,18 @@ import AuthenticationServices
         NSLayoutConstraint.activate([logo.widthAnchor.constraint(equalToConstant: 48), logo.heightAnchor.constraint(equalToConstant: 48)])
         let brandText = UIStackView(); brandText.axis = .vertical; brandText.spacing = 4
         brandText.addArrangedSubview(label("Veloxion AI", size: 19, bold: true))
-        brandText.addArrangedSubview(label((api.region.euro ? "EUROPE / " : "") + t("brandSubtitle"), size: 11, muted: true))
+        configureLabel(brandSubtitle, size: 11, muted: true); brandSubtitle.text = (api.region.euro ? "EU / " : "") + t("brandSubtitle")
+        brandText.addArrangedSubview(brandSubtitle)
         brand.addArrangedSubview(logo); brand.addArrangedSubview(brandText); outer.addArrangedSubview(brand)
+        if api.region.euro {
+            languageButton.titleLabel?.font = AuthAppearance.font(14, bold: true); languageButton.setTitleColor(AuthAppearance.ink, for: .normal)
+            languageButton.backgroundColor = UIColor.white.withAlphaComponent(0.9); languageButton.layer.cornerRadius = 14
+            languageButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
+            languageButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+            languageButton.setContentHuggingPriority(.required, for: .horizontal); languageButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+            languageButton.showsMenuAsPrimaryAction = true; actions.append(languageButton); brand.addArrangedSubview(languageButton)
+            updateLanguageMenu()
+        }
         let card = UIView(); card.backgroundColor = UIColor.white.withAlphaComponent(0.96); card.layer.cornerRadius = 26
         card.layer.borderWidth = 1; card.layer.borderColor = UIColor(red: 0.64, green: 0.76, blue: 0.83, alpha: 1).cgColor
         card.layer.shadowColor = AuthAppearance.ink.cgColor; card.layer.shadowOpacity = 0.08; card.layer.shadowRadius = 18; card.layer.shadowOffset = CGSize(width: 0, height: 6)
@@ -117,14 +141,19 @@ import AuthenticationServices
             styleButton(tab, key: key, selector: action); tab.layer.cornerRadius = 20; tabs.addArrangedSubview(tab)
         }
         stack.addArrangedSubview(tabs)
-        button(providerButton, key: api.region.euro ? "googleLogin" : "yandexLogin", selector: #selector(startProvider))
+        button(providerButton, key: api.region.euro ? "googleLogin" : "yandexLogin", selector: #selector(startProviderButton))
         providerButton.layer.cornerRadius = 14; providerButton.layer.borderWidth = 1; providerButton.layer.borderColor = UIColor(red: 0.66, green: 0.78, blue: 0.84, alpha: 1).cgColor
         if api.region.euro, let url = Bundle.main.url(forResource: "google-g", withExtension: "png", subdirectory: "public"), let image = UIImage(contentsOfFile: url.path) {
             let resized = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).image { _ in image.draw(in: CGRect(x: 0, y: 0, width: 20, height: 20)) }
             providerButton.setImage(resized.withRenderingMode(.alwaysOriginal), for: .normal)
             providerButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: -10, bottom: 0, right: 10)
         }
+        if !api.region.euro {
+            button(vkButton, key: "vkLogin", selector: #selector(startVK))
+            vkButton.backgroundColor = UIColor(red: 0, green: 0.47, blue: 1, alpha: 1); vkButton.setTitleColor(.white, for: .normal); vkButton.layer.cornerRadius = 14
+        }
         configureLabel(providerOr, size: 12, muted: true); providerOr.text = t("providerOr"); providerOr.textAlignment = .center; stack.addArrangedSubview(providerOr)
+        translatedLabels[providerOr] = "providerOr"
         field(name, key: "name", content: .name); name.autocapitalizationType = .words
         field(identity, key: usesEmail ? "email" : "phone", content: .username)
         field(password, key: "password", content: .password); password.isSecureTextEntry = true
@@ -138,6 +167,7 @@ import AuthenticationServices
             let link = UIButton(type: .system); link.setTitle(t(key + "Short"), for: .normal); link.accessibilityLabel = t(key); link.titleLabel?.font = AuthAppearance.font(12)
             link.titleLabel?.numberOfLines = 0; link.accessibilityIdentifier = key; link.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
             link.addTarget(self, action: #selector(openLegal(_:)), for: .touchUpInside); legal.addArrangedSubview(link)
+            translatedButtons[link] = key + "Short"
         }
         stack.addArrangedSubview(legal)
         configureLabel(notice, size: 13, muted: true); notice.isHidden = true; notice.accessibilityTraits.insert(.updatesFrequently); stack.addArrangedSubview(notice)
@@ -147,7 +177,7 @@ import AuthenticationServices
         button(UIButton(type: .system), key: "retry", selector: #selector(restore))
         button(emailMode, key: "emailLogin", selector: #selector(toggleEmail))
         button(UIButton(type: .system), key: "other", selector: #selector(otherMethods))
-        outer.addArrangedSubview(label(t("offlineHint"), size: 12, muted: true)); outer.addArrangedSubview(label(t("secure"), size: 11, muted: true))
+        for key in ["offlineHint", "secure"] { let note = label(t(key), size: 12, muted: true); translatedLabels[note] = key; outer.addArrangedSubview(note) }
         update()
         if NativeAuthStore.shared.read() != nil { restore() }
     }
@@ -165,6 +195,7 @@ import AuthenticationServices
         field.font = AuthAppearance.font(16); field.adjustsFontForContentSizeCategory = true; field.textContentType = content; field.autocorrectionType = .no; field.autocapitalizationType = .none
         field.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
         stack.addArrangedSubview(row); rows[ObjectIdentifier(field)] = row; fieldLabels[ObjectIdentifier(field)] = title; actions.append(field)
+        fieldKeys[field] = key; translatedLabels[title] = key
     }
     private func button(_ button: UIButton, key: String, selector: Selector, primary: Bool = false) {
         styleButton(button, key: key, selector: selector)
@@ -172,12 +203,33 @@ import AuthenticationServices
         stack.addArrangedSubview(button)
     }
     private func styleButton(_ button: UIButton, key: String, selector: Selector) {
+        translatedButtons[button] = key
         button.setTitle(t(key), for: .normal); button.titleLabel?.font = AuthAppearance.font(14, bold: true); button.titleLabel?.numberOfLines = 0
         button.setTitleColor(UIColor(red: 0.15, green: 0.33, blue: 0.48, alpha: 1), for: .normal)
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 10, bottom: 12, right: 10); button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         button.addTarget(self, action: selector, for: .touchUpInside); actions.append(button)
     }
     private func showNotice(_ message: String) { notice.text = message; notice.isHidden = message.isEmpty }
+    private func updateLanguageMenu() {
+        languageButton.setTitle(locale.uppercased() + " ▾", for: .normal); languageButton.accessibilityLabel = t("language")
+        languageButton.menu = UIMenu(title: t("language"), children: NativeAuthLocale.codes.enumerated().map { index, code in
+            UIAction(title: NativeAuthLocale.labels[index], state: code == locale ? .on : .off) { [weak self] _ in self?.changeLanguage(code) }
+        })
+    }
+    private func changeLanguage(_ next: String) {
+        guard api.region.euro, !busy, providerFlow == nil, next != locale, NativeAuthLocale.codes.contains(next), let labels = dictionaries[next] else { return }
+        let noticeKey = strings.first { $0.value == notice.text }?.key
+        locale = next; strings = labels; UserDefaults.standard.set(next, forKey: NativeAuthLocale.key)
+        translatedLabels.forEach { $0.key.text = t($0.value) }
+        translatedButtons.forEach { button, key in
+            button.setTitle(t(key), for: .normal)
+            if let legal = button.accessibilityIdentifier { button.accessibilityLabel = t(legal) }
+        }
+        fieldKeys.forEach { field, key in field.placeholder = t(key); field.accessibilityLabel = t(key) }
+        brandSubtitle.text = "EU / " + t("brandSubtitle"); updateLanguageMenu()
+        if let key = noticeKey { showNotice(t(key)) }
+        update()
+    }
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         guard textField === identity, !usesEmail else { return true }
         let edit = NativePhoneMask.edit(textField.text ?? "", location: range.location, length: range.length, replacement: string)
@@ -189,6 +241,7 @@ import AuthenticationServices
         let editable = !busy && providerFlow == nil
         actions.forEach { $0.isEnabled = editable }
         providerButton.isHidden = codeStep; providerOr.isHidden = codeStep
+        vkButton.isHidden = api.region.euro || codeStep
         heading.text = t(codeStep ? "codeTitle" : registering ? "registerTitle" : "loginTitle"); intro.text = t(codeStep ? "sent" : registering ? "registerIntro" : "loginIntro")
         loginTab.isSelected = !registering; registerTab.isSelected = registering
         for tab in [loginTab, registerTab] { tab.backgroundColor = tab.isSelected ? .white : .clear; tab.accessibilityTraits = tab.isSelected ? [.button, .selected] : .button }
@@ -267,11 +320,13 @@ import AuthenticationServices
         }
     }
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor { view.window! }
-    @objc private func startProvider() {
+    @objc private func startProviderButton() { startProvider(api.region.euro ? "google" : "yandex") }
+    @objc private func startVK() { startProvider("vk") }
+    private func startProvider(_ provider: String) {
         guard !busy, providerFlow == nil else { return }
         guard !registering || consent.isSelected else { showNotice(t("invalidConsent")); return }
         let flow: NativeOAuthFlow
-        do { flow = try NativeOAuthFlow(bundle: Bundle.main.bundleIdentifier!) }
+        do { flow = try NativeOAuthFlow(bundle: Bundle.main.bundleIdentifier!, selectedProvider: provider) }
         catch { showNotice(t("server")); return }
         let revision = NativeAuthStore.shared.revision
         let body: [String: Any] = ["provider": flow.provider, "platform": "ios", "state": flow.state,

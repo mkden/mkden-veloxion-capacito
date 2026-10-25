@@ -11,16 +11,18 @@ struct NativeOAuthFlow {
         guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw Failure.invalid }
         return encode(Data(bytes))
     }
-    init(bundle: String) throws {
+    init(bundle: String, selectedProvider: String? = nil) throws {
         guard ["eu.veloxion.app", "io.veloxion.app"].contains(bundle) else { throw Failure.invalid }
-        scheme = bundle; provider = bundle == "eu.veloxion.app" ? "google" : "yandex"
+        let selected = selectedProvider ?? (bundle == "eu.veloxion.app" ? "google" : "yandex")
+        guard (bundle == "eu.veloxion.app" ? ["google"] : ["yandex", "vk"]).contains(selected) else { throw Failure.invalid }
+        scheme = bundle; provider = selected
         state = try Self.random(); verifier = try Self.random()
         challenge = Self.encode(Data(SHA256.hash(data: Data(verifier.utf8))))
     }
     func authorization(_ raw: String) throws -> URL {
         guard let url = URL(string: raw), url.scheme == "https", url.user == nil, url.password == nil,
               url.port == nil || url.port == 443, url.fragment == nil,
-              url.host == (provider == "google" ? "accounts.google.com" : "oauth.yandex.ru"),
+              url.host == (provider == "google" ? "accounts.google.com" : provider == "vk" ? "id.vk.com" : "oauth.yandex.ru"),
               url.path == (provider == "google" ? "/o/oauth2/v2/auth" : "/authorize") else { throw Failure.invalid }
         return url
     }
