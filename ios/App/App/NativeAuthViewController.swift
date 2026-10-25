@@ -1,5 +1,6 @@
 import UIKit
 import CoreText
+import AuthenticationServices
 
 @MainActor private enum AuthAppearance {
     static let ink = UIColor(red: 0.08, green: 0.14, blue: 0.23, alpha: 1)
@@ -49,7 +50,7 @@ import CoreText
 }
 
 /// UIKit remains the application root until authentication and site availability succeed.
-@MainActor final class NativeAuthViewController: UIViewController, UITextFieldDelegate {
+@MainActor final class NativeAuthViewController: UIViewController, UITextFieldDelegate, ASWebAuthenticationPresentationContextProviding {
     private let api = NativeAuthApi()
     private let stack = UIStackView()
     private let name = AuthField(), identity = AuthField(), password = AuthField(), confirm = AuthField(), code = AuthField()
@@ -58,6 +59,9 @@ import CoreText
     private var rows: [ObjectIdentifier: UIStackView] = [:]
     private var fieldLabels: [ObjectIdentifier: UILabel] = [:]
     private let notice = UILabel()
+    private let providerButton = UIButton(type: .system), providerOr = UILabel()
+    private var providerFlow: NativeOAuthFlow?
+    private var webAuthentication: ASWebAuthenticationSession?
     private let loginTab = UIButton(type: .system), registerTab = UIButton(type: .system), submit = AuthPrimaryButton(frame: .zero), resend = UIButton(type: .system), back = UIButton(type: .system), emailMode = UIButton(type: .system)
     private var strings: [String: String] = [:]
     private var actions: [UIControl] = []
@@ -113,6 +117,14 @@ import CoreText
             styleButton(tab, key: key, selector: action); tab.layer.cornerRadius = 20; tabs.addArrangedSubview(tab)
         }
         stack.addArrangedSubview(tabs)
+        button(providerButton, key: api.region.euro ? "googleLogin" : "yandexLogin", selector: #selector(startProvider))
+        providerButton.layer.cornerRadius = 14; providerButton.layer.borderWidth = 1; providerButton.layer.borderColor = UIColor(red: 0.66, green: 0.78, blue: 0.84, alpha: 1).cgColor
+        if api.region.euro, let url = Bundle.main.url(forResource: "google-g", withExtension: "png", subdirectory: "public"), let image = UIImage(contentsOfFile: url.path) {
+            let resized = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).image { _ in image.draw(in: CGRect(x: 0, y: 0, width: 20, height: 20)) }
+            providerButton.setImage(resized.withRenderingMode(.alwaysOriginal), for: .normal)
+            providerButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: -10, bottom: 0, right: 10)
+        }
+        configureLabel(providerOr, size: 12, muted: true); providerOr.text = t("providerOr"); providerOr.textAlignment = .center; stack.addArrangedSubview(providerOr)
         field(name, key: "name", content: .name); name.autocapitalizationType = .words
         field(identity, key: usesEmail ? "email" : "phone", content: .username)
         field(password, key: "password", content: .password); password.isSecureTextEntry = true
@@ -174,6 +186,9 @@ import CoreText
         return false
     }
     private func update() {
+        let editable = !busy && providerFlow == nil
+        actions.forEach { $0.isEnabled = editable }
+        providerButton.isHidden = codeStep; providerOr.isHidden = codeStep
         heading.text = t(codeStep ? "codeTitle" : registering ? "registerTitle" : "loginTitle"); intro.text = t(codeStep ? "sent" : registering ? "registerIntro" : "loginIntro")
         loginTab.isSelected = !registering; registerTab.isSelected = registering
         for tab in [loginTab, registerTab] { tab.backgroundColor = tab.isSelected ? .white : .clear; tab.accessibilityTraits = tab.isSelected ? [.button, .selected] : .button }
@@ -187,7 +202,7 @@ import CoreText
         identity.textContentType = usesEmail ? .username : .telephoneNumber
         password.textContentType = registering ? .newPassword : .password
         submit.setTitle(t(codeStep ? "continue" : usesEmail && !registering ? "login" : "send"), for: .normal)
-        identity.isEnabled = !busy && !codeStep; name.isEnabled = !busy && !codeStep
+        identity.isEnabled = editable && !codeStep; name.isEnabled = editable && !codeStep
     }
     private func validationKey() -> String {
         let id = value(identity), secret = password.text ?? ""
@@ -210,7 +225,7 @@ import CoreText
     @objc private func selectLogin() { selectMode(false) }
     @objc private func selectRegister() { selectMode(true) }
     private func selectMode(_ registration: Bool) {
-        guard !busy, registering != registration else { return }
+        guard !busy, providerFlow == nil, registering != registration else { return }
         let wasEmail = usesEmail; registering = registration; emailLogin = false
         if wasEmail != usesEmail { identity.text = "" }
         password.text = ""; confirm.text = ""; consent.isSelected = false; reset()
@@ -251,6 +266,56 @@ import CoreText
             if session != nil { openWorkspace(webAuth: false) } else { showNotice(t("login")) }
         }
     }
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor { view.window! }
+    @objc private func startProvider() {
+        guard !busy, providerFlow == nil else { return }
+        guard !registering || consent.isSelected else { showNotice(t("invalidConsent")); return }
+        let flow: NativeOAuthFlow
+        do { flow = try NativeOAuthFlow(bundle: Bundle.main.bundleIdentifier!) }
+        catch { showNotice(t("server")); return }
+        let revision = NativeAuthStore.shared.revision
+        let body: [String: Any] = ["provider": flow.provider, "platform": "ios", "state": flow.state,
+                                  "codeChallenge": flow.challenge, "intent": registering ? "register" : "login", "termsAccepted": registering && consent.isSelected]
+        view.endEditing(true)
+        run { [self] in
+            let response = try await api.request("/auth/native/start", body: body)
+            guard NativeAuthStore.shared.revision == revision else { throw NativeAuthFailure("expired") }
+            let url = try flow.authorization(response["authorizationUrl"] as? String ?? "")
+            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: flow.scheme) { [weak self] url, error in
+                Task { @MainActor [weak self] in
+                    guard let self = self, self.providerFlow?.state == flow.state else { return }
+                    self.webAuthentication = nil; self.providerFlow = nil; self.update()
+                    guard error == nil, let url = url else { self.showNotice(self.t("providerCancelled")); return }
+                    self.finishProvider(flow, url: url, revision: revision)
+                }
+            }
+            session.presentationContextProvider = self
+            webAuthentication = session; providerFlow = flow
+            guard session.start() else { webAuthentication = nil; providerFlow = nil; throw NativeAuthFailure("providerUnavailable") }
+            showNotice(t("providerWaiting"))
+        }
+    }
+    private func finishProvider(_ flow: NativeOAuthFlow, url: URL, revision: Int) {
+        let callback: [String: String]
+        do { callback = try flow.callback(url) }
+        catch { showNotice(t("denied")); return }
+        guard NativeAuthStore.shared.revision == revision else { showNotice(t("expired")); return }
+        if let error = callback["error"] {
+            if error == "registration_required" { selectMode(true); showNotice(t("registrationRequired")) }
+            else { showNotice(t(error == "cancelled" ? "providerCancelled" : "denied")) }
+            return
+        }
+        guard let code = callback["code"] else { showNotice(t("denied")); return }
+        run { [self] in
+            let response = try await api.request("/auth/native/exchange", body: ["code": code, "codeVerifier": flow.verifier])
+            let session = try api.session(response)
+            try await api.validate(session["accessToken"]!)
+            try NativeAuthStore.shared.save(session, revision: revision)
+            try await api.checkSite()
+            password.text = ""; confirm.text = ""; self.code.text = ""
+            openWorkspace(webAuth: false)
+        }
+    }
     @objc private func otherMethods() { run { [self] in try await api.checkSite(); openWorkspace(webAuth: true) } }
     @objc private func openLegal(_ sender: UIButton) {
         let paths = api.region.euro ? ["rules": "/service-rules", "privacy": "/privacy-policy", "offer": "/offer-terms"]
@@ -259,7 +324,7 @@ import CoreText
         UIApplication.shared.open(url)
     }
     private func run(_ operation: @escaping @MainActor () async throws -> Void) {
-        guard !busy else { return }; busy = true; actions.forEach { $0.isEnabled = false }; showNotice(t("working"))
+        guard !busy, providerFlow == nil else { return }; busy = true; actions.forEach { $0.isEnabled = false }; showNotice(t("working"))
         work = Task { [self] in
             defer {
                 busy = false; actions.forEach { $0.isEnabled = true }; generation = NativeAuthStore.shared.revision; update()
@@ -273,5 +338,5 @@ import CoreText
         view.endEditing(true)
         (UIApplication.shared.delegate as? AppDelegate)?.showWorkspace(webAuth: webAuth)
     }
-    deinit { work?.cancel() }
+    deinit { work?.cancel(); webAuthentication?.cancel() }
 }

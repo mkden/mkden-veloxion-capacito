@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.browser.customtabs.CustomTabsIntent;
 import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -39,6 +40,10 @@ public class NativeAuthActivity extends AppCompatActivity {
     private CheckBox consent;
     private TextView notice;
     private Button submit, resend, back, loginTab, registerTab, emailMode;
+    private Button providerButton;
+    private TextView providerOr;
+    private NativeOAuthFlow oauthFlow;
+    private boolean oauthLeft;
     private boolean registering, codeStep, emailLogin, busy;
     private long resendAt;
     private int generation;
@@ -55,7 +60,8 @@ public class NativeAuthActivity extends AppCompatActivity {
             strings = locales.getJSONObject(!api.euro || Locale.getDefault().getLanguage().equals("ru") ? "ru" : "en");
         } catch (Exception error) { throw new IllegalStateException("Bundled authentication translations are missing", error); }
         build();
-        if (store.read() != null) restore();
+        if (isProviderCallback(getIntent())) showNotice(t("expired"));
+        else if (store.read() != null) restore();
     }
 
     private String t(String key) { return strings.optString(key, key); }
@@ -132,6 +138,13 @@ public class NativeAuthActivity extends AppCompatActivity {
             tab.setOnClickListener(v -> selectMode(registration)); tabs.addView(tab,new LinearLayout.LayoutParams(0,-2,1)); controls.add(tab);
         }
         LinearLayout.LayoutParams tabLayout=new LinearLayout.LayoutParams(-1,-2); tabLayout.topMargin=dp(16); tabLayout.bottomMargin=dp(4); content.addView(tabs,tabLayout);
+        providerButton=button(api.euro?"googleLogin":"yandexLogin",this::startProvider,false);
+        GradientDrawable providerBackground=background(Color.WHITE,14); providerBackground.setStroke(dp(1),0xffa8c6d6); providerButton.setBackground(providerBackground);
+        if (api.euro) try (java.io.InputStream input=getAssets().open("public/google-g.png")) {
+            android.graphics.drawable.BitmapDrawable logoDrawable=new android.graphics.drawable.BitmapDrawable(getResources(),BitmapFactory.decodeStream(input));
+            logoDrawable.setBounds(0,0,dp(20),dp(20)); providerButton.setCompoundDrawablesRelative(logoDrawable,null,null,null); providerButton.setCompoundDrawablePadding(dp(12));
+        } catch (Exception ignored) {}
+        providerOr=text(t("providerOr"),12,false); providerOr.setGravity(android.view.Gravity.CENTER); providerOr.setTextColor(0xff61718b);
         name = field("name", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         identity = field(api.euro ? "email" : "phone", api.euro ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS : InputType.TYPE_CLASS_PHONE);
         identityLabel=(TextView)rows.get(identity).getChildAt(0);
@@ -171,7 +184,7 @@ public class NativeAuthActivity extends AppCompatActivity {
     }
 
     private void selectMode(boolean registration) {
-        if (busy || registering==registration) return;
+        if (busy || oauthFlow!=null || registering==registration) return;
         boolean wasEmail=usesEmail(); registering=registration; emailLogin=false;
         if (wasEmail!=usesEmail()) identity.setText("");
         password.setText(""); confirm.setText(""); consent.setChecked(false); resetCode(); update();
@@ -222,6 +235,9 @@ public class NativeAuthActivity extends AppCompatActivity {
     }
     private void resetCode() { codeStep=false; if (code!=null) code.setText(""); if (notice!=null) showNotice(""); }
     private void update() {
+        boolean editable=!busy && oauthFlow==null;
+        controls.forEach(v->v.setEnabled(editable));
+        providerButton.setVisibility(codeStep?View.GONE:View.VISIBLE); providerOr.setVisibility(codeStep?View.GONE:View.VISIBLE);
         heading.setText(t(codeStep?"codeTitle":registering?"registerTitle":"loginTitle")); intro.setText(t(codeStep?"sent":registering?"registerIntro":"loginIntro"));
         loginTab.setSelected(!registering); registerTab.setSelected(registering);
         for (Button tab:new Button[]{loginTab,registerTab}) { tab.setBackground(background(tab.isSelected()?Color.WHITE:Color.TRANSPARENT,20)); tab.setTextColor(tab.isSelected()?0xff14233a:0xff61718b); }
@@ -231,7 +247,59 @@ public class NativeAuthActivity extends AppCompatActivity {
         emailMode.setVisibility(!api.euro && !registering && !codeStep?View.VISIBLE:View.GONE); emailMode.setText(t(emailLogin?"phoneLogin":"emailLogin"));
         identityLabel.setText(t(usesEmail()?"email":"phone")); identity.setHint(usesEmail()?"name@example.com":"+7 (999) 123-45-67"); identity.setInputType(usesEmail()?InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS:InputType.TYPE_CLASS_PHONE); identity.setTypeface(font);
         submit.setText(t(codeStep?"continue":usesEmail()&&!registering?"login":"send"));
-        identity.setEnabled(!busy && !codeStep); name.setEnabled(!busy && !codeStep);
+        identity.setEnabled(editable && !codeStep); name.setEnabled(editable && !codeStep);
+    }
+    private void startProvider() {
+        if (busy || oauthFlow!=null) return;
+        if (registering && !consent.isChecked()) { showNotice(t("invalidConsent")); return; }
+        final NativeOAuthFlow flow; final JSONObject body;
+        try {
+            flow=new NativeOAuthFlow(getPackageName(),AuthSessionStore.revision.get(),SystemClock.elapsedRealtime());
+            body=new JSONObject().put("provider",flow.provider).put("platform","android").put("state",flow.state)
+                .put("codeChallenge",flow.challenge).put("intent",registering?"register":"login").put("termsAccepted",registering && consent.isChecked());
+        } catch (Exception ignored) { showNotice(t("server")); return; }
+        run(form->api.request("/auth/native/start",body,null), data->{
+            try {
+                if (flow.revision!=AuthSessionStore.revision.get()) throw new IllegalStateException();
+                android.net.Uri url=android.net.Uri.parse(flow.authorization(data.getString("authorizationUrl")).toString());
+                oauthFlow=flow; oauthLeft=false; update(); showNotice(t("providerWaiting"));
+                CustomTabsIntent tab=new CustomTabsIntent.Builder().setShowTitle(true).build();
+                tab.intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY); tab.launchUrl(this,url);
+            } catch (Exception ignored) { oauthFlow=null; update(); showNotice(t("providerUnavailable")); }
+        });
+    }
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (!isProviderCallback(intent)) { if (intent.getExtras()!=null) getIntent().putExtras(intent.getExtras()); return; }
+        final NativeOAuthFlow flow=oauthFlow;
+        if (flow==null || busy) { showNotice(t("expired")); return; }
+        final java.util.Map<String,String> callback;
+        try {
+            callback=flow.callback(intent.getData().toString());
+            if (SystemClock.elapsedRealtime()-flow.createdAt>600000 || flow.revision!=AuthSessionStore.revision.get()) throw new IllegalStateException();
+        } catch (Exception ignored) { oauthFlow=null; update(); showNotice(t("denied")); return; }
+        oauthFlow=null; oauthLeft=false; update();
+        if (callback.containsKey("error")) {
+            String problem=callback.get("error");
+            if (problem.equals("registration_required")) { selectMode(true); showNotice(t("registrationRequired")); }
+            else showNotice(t(problem.equals("cancelled")?"providerCancelled":"denied"));
+            return;
+        }
+        run(form->{
+            JSONObject session=api.session(api.request("/auth/native/exchange",new JSONObject().put("code",callback.get("code")).put("codeVerifier",flow.verifier),null));
+            api.validate(session.getString("accessToken")); store.save(session,flow.revision); api.checkSite(); return session;
+        }, ignored->{ password.setText(""); confirm.setText(""); code.setText(""); openWorkspace(false); });
+    }
+    private boolean isProviderCallback(Intent intent) {
+        android.net.Uri url=intent.getData();
+        return url!=null && getPackageName().equals(url.getScheme()) && "oauth".equals(url.getHost()) && "/callback".equals(url.getPath());
+    }
+    @Override protected void onPause() { if (oauthFlow!=null) oauthLeft=true; super.onPause(); }
+    @Override protected void onResume() {
+        super.onResume(); final NativeOAuthFlow flow=oauthFlow;
+        if (flow!=null && oauthLeft) getWindow().getDecorView().postDelayed(()->{
+            if (oauthFlow==flow && !busy && !isFinishing()) { oauthFlow=null; oauthLeft=false; update(); showNotice(t("providerCancelled")); }
+        },350);
     }
     private void restore() {
         run(form -> { JSONObject session=api.restore(store); api.checkSite(); return session; }, session -> {
@@ -242,7 +310,7 @@ public class NativeAuthActivity extends AppCompatActivity {
     private interface Task { JSONObject run(JSONObject form) throws Exception; }
     private interface Done { void accept(JSONObject result); }
     private void run(Task task, Done done) {
-        if (busy) return; busy=true; controls.forEach(v->v.setEnabled(false)); showNotice(t("working"));
+        if (busy || oauthFlow!=null) return; busy=true; controls.forEach(v->v.setEnabled(false)); showNotice(t("working"));
         // Snapshot form values on the UI thread; only network and secure storage run in the worker.
         final JSONObject form;
         try { form=details(); } catch (Exception ignored) { busy=false; controls.forEach(v->v.setEnabled(true)); update(); return; }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A89000010000000000000005 /* NativeOAuthFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000015; };
         A89000010000000000000004 /* NativePhoneMask.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000014; };
         A89000010000000000000001 /* NativeAuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000011; };
         A89000010000000000000002 /* NativeAuthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89000010000000000000012; };
@@ -25,6 +26,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        A89000010000000000000015 /* NativeOAuthFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeOAuthFlow.swift; sourceTree = "<group>"; };
         A89000010000000000000014 /* NativePhoneMask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePhoneMask.swift; sourceTree = "<group>"; };
         A89000010000000000000011 /* NativeAuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAuthSession.swift; sourceTree = "<group>"; };
         A89000010000000000000012 /* NativeAuthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAuthViewController.swift; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 				A89000010000000000000012 /* NativeAuthViewController.swift */,
 				A89000010000000000000013 /* NativeAuthPlugin.swift */,
 				A89000010000000000000014 /* NativePhoneMask.swift */,
+                A89000010000000000000015 /* NativeOAuthFlow.swift */,
 				504EC3091FED79650016851F /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -179,6 +182,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                A89000010000000000000005 /* NativeOAuthFlow.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A88000010000000000000001 /* VeloxionViewController.swift in Sources */,
 				A88000010000000000000002 /* VeloxionPurchasesPlugin.swift in Sources */,
