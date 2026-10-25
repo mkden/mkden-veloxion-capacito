@@ -1,5 +1,33 @@
 # Native Authentication (RUS / EURO)
 
+## Verified UI Update: 25 October 2026
+
+- Native UI source: `d767c36` on `feature/ios-euro-app`.
+- RUS TestFlight: `202610251503`; EURO TestFlight: `202610251500`.
+  Apple reports both `VALID` and `IN_BETA_TESTING`. The existing RUS `velox`
+  and EURO `Veloxion EURO Internal` groups contain the corresponding builds.
+  No roles, external invitations or App Review submissions were changed.
+- RUS APK: `build-local/rus/Veloxion-RUS-1.0.3-6.apk`.
+- EURO APK: `build-local/euro/Veloxion-EURO-1.0.2-3.apk`.
+  APK v2/v3 signatures are valid and match the previous regional certificates.
+- Both platforms bundle the LK logo and licensed Manrope font, explicit readable
+  font weights, light cards, login/registration tabs and gradient primary actions.
+  Native forms remain scrollable above the keyboard and constrained on tablets.
+- RUS phone input matches the website: `+7 (999) 123-45-67`, initial `8` becomes
+  `+7`, paste/edit/delete preserve cursor position, and an incomplete number is
+  rejected locally. API requests use the canonical `+79123456789` identity.
+  EURO and legacy RUS email input are not passed through the phone mask.
+- Registration consent starts unchecked; validation errors identify the actual
+  missing field. Authentication APIs, encrypted storage, purchases and push
+  routing are unchanged. No frontend/backend deployment or migration was needed
+  for this bundled UI update: install the new app build to receive it.
+- All 53 local automated checks passed. Java and Swift share mask regression
+  vectors; both Mac CI workflows passed the Swift tests and signed compilation.
+  Isolated Android airplane-mode checks covered native forms, registration,
+  consent, phone normalization, connection failure, small screens and tablet width.
+  No real SMS/email, accounts or paid requests were generated. Physical iPhone
+  and end-to-end SMS/email delivery still need device testing.
+
 ## Verified Release: 24 October 2026
 
 - App source commit: `aad14e7` on `feature/ios-euro-app`.
