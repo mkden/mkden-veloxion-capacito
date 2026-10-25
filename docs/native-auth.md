@@ -1,5 +1,53 @@
 # Native Authentication (RUS / EURO)
 
+## Verified Provider Release: 25 October 2026
+
+- Native provider implementation: `e8e356c`; Android reuses Browser `1.9.0`
+  from the existing Capacitor dependency graph (`f086530`).
+- RUS: Yandex ID, APK `build-local/rus/Veloxion-RUS-1.0.4-7.apk`,
+  TestFlight `202610251627`.
+- EURO: Google, APK `build-local/euro/Veloxion-EURO-1.0.3-4.apk`,
+  TestFlight `202610251623`.
+- Apple reports both builds `VALID` / `IN_BETA_TESTING`; the existing internal
+  groups contain them. APK signatures match the previous regional certificates.
+  No roles, external testers or App Review submissions were changed.
+- Buttons are native UIKit / Android controls. Provider authentication uses
+  `ASWebAuthenticationSession` (iOS) and browser Custom Tabs (Android), not the
+  application WebView. This is system OAuth, not the Google/Yandex native SDK
+  account picker. Existing web client IDs, secrets and HTTPS callbacks are
+  reused from admin/database settings. No client secrets are bundled.
+- New endpoints: `POST /api/auth/native/start` and
+  `POST /api/auth/native/exchange`. Providers are region-restricted. Redis
+  states expire in 600 seconds and are consumed atomically. The server returns
+  a 90-second single-use ticket to `<regional-bundle>://oauth/callback`.
+  Tokens are returned only by the PKCE-protected HTTPS exchange, never in URLs.
+- Native callbacks validate scheme/host/path, state and duplicate parameters.
+  Revision guards protect logout; sessions still use Keychain / Android Keystore.
+  A cold callback without its in-memory proof cannot sign in. Registration
+  requires explicit consent; unknown logins cannot silently create accounts.
+- Backend source and compiled-auth backups:
+  `/home/vel/backups/native-oauth-20261025/euro-162740` and
+  `/home/vel/backups/native-oauth-20261025/rus-162816`.
+  Only API processes were restarted. Workers, DB data, prices, keys and CHINA
+  were not changed; no SQL migration is needed.
+- Verification: 55 app tests, 6 backend tests per region, Java/Swift proof and
+  callback tests, signed Mac builds, matching APK signing identities, Android
+  provider buttons/offline errors, rejected unsolicited callbacks and live
+  server cancel/replay/consent checks. Real provider accounts and physical
+  iPhones were not used. Real sign-in/registration still need device testing.
+
+```text
+node --test test/*.test.mjs
+node scripts/verify-native-oauth-live.mjs
+each backend: npx ts-node --files -r tsconfig-paths/register test/native-oauth.test.ts
+```
+
+The live smoke command creates/cancels temporary states only, without contacting
+provider token endpoints or creating accounts. Before App Review, address
+Apple's login service requirements, including a private-email option where
+required: https://developer.apple.com/app-store/review/guidelines/#login-services.
+Sign in with Apple is not enabled by this change.
+
 ## Verified UI Update: 25 October 2026
 
 - Native UI source: `d767c36` on `feature/ios-euro-app`.
@@ -58,8 +106,9 @@ require a working internet connection. Requests are never queued for later.
   Existing email/password accounts have a separate sign-in option.
 - EURO: email/password sign-in; registration requires a name, repeated password,
   consent and an email verification code.
-- Other existing providers remain available through an explicitly chosen online
-  web flow. They are not presented as native Google/VK/Yandex SDK integrations.
+- Google (EURO) and Yandex ID (RUS) have native buttons with a system-browser
+  OAuth flow. Remaining providers retain the explicitly chosen online web flow.
+  These are not Google/VK/Yandex native SDK account-picker integrations.
 - Code resends have a minimum 60-second cooldown. Mutating auth requests are not
   automatically retried. Errors are translated, without displaying server internals.
 - Access/refresh tokens are kept in device-only Keychain on iOS and AES-GCM storage
