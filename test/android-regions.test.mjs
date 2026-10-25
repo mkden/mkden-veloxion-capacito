@@ -13,7 +13,8 @@ test('Android selects only the matching regional Firebase app', () => {
 });
 test('Android has independent identity, an explicit activity, and notification permission/icon', () => {
   assert.match(read('android/app/build.gradle'), /applicationId region.appId/);
-  assert.match(read('android/app/build.gradle'), /regionName == 'euro' \? 1 : 3/);
+  const versions = /regionName == 'euro' \? (\d+) : (\d+)/.exec(read('android/app/build.gradle'));
+  assert.ok(versions && Number(versions[1]) >= 3 && Number(versions[2]) >= 6, 'Defaults must not downgrade the released APKs');
   assert.match(read('android/app/src/main/AndroidManifest.xml'), /android:name="io.veloxion.app.MainActivity"/);
   assert.match(read('android/app/src/main/AndroidManifest.xml'), /POST_NOTIFICATIONS/);
   assert.match(read('android/app/src/main/AndroidManifest.xml'), /default_notification_icon/);
