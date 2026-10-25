@@ -1,5 +1,35 @@
 # Native Authentication (RUS / EURO)
 
+## VK and EURO Languages: 25 October 2026
+
+- Source: `0a213e3` on `feature/ios-euro-app`.
+- EURO: seven offline languages matching the workspace, no Russian, persistent
+  preference synchronized in both directions; `EU /` in the native header.
+- RUS: VK ID alongside Yandex ID, phone/SMS and existing email sign-in.
+  VK ID uses provider PKCE and the registered `https://veloxion.io/auth` callback.
+  Next.js `proxy.ts` forwards only native states before React rendering with
+  HTTP 307, `no-store` and `no-referrer`; ordinary web sign-in is unchanged.
+- Signed APKs: EURO `build-local/euro/Veloxion-EURO-1.0.4-5.apk`,
+  RUS `build-local/rus/Veloxion-RUS-1.0.5-8.apk`. Both installed successfully in
+  an isolated emulator; signatures match their previous certificates.
+- EURO TestFlight `202610251713`: `VALID`, `IN_BETA_TESTING`, linked to the
+  existing internal group. RUS `202610251717`: upload confirmed by Codemagic;
+  Apple build upload `fb55c952-ca18-478c-8765-a2b422fd5c8c` is `PROCESSING`,
+  with no reported errors or warnings. No App Review or external invitations.
+- RUS backend and both frontends deployed from separately verified builds.
+  Backups: `/home/vel/backups/native-vk-locale-20261025/`, including final RUS
+  frontend `rus-site-172841`. Keys, database data, balances and workers unchanged.
+- Verified: 57 app tests, 9 RUS broker tests, frontend tests and TypeScript,
+  Java/Swift proof and locale tests, signed iOS builds, live Google/Yandex/VK
+  cancellation/replay checks, VK provider binding, web compatibility, Android
+  language selection/input preservation, offline restart and VK offline error.
+  Real provider account sign-in and physical iPhone testing remain manual.
+
+```text
+node scripts/verify-native-vk-live.mjs
+RUS frontend: node --test test/native-auth.test.cjs test/native-vk-callback.test.cjs
+```
+
 ## Verified Provider Release: 25 October 2026
 
 - Native provider implementation: `e8e356c`; Android reuses Browser `1.9.0`
