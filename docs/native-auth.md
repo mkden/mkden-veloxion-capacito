@@ -1,5 +1,39 @@
 # Native Authentication (RUS / EURO)
 
+## JavaScript Check: 25 October 2026
+
+- Native source: `503ec14`. Signed APKs: EURO `1.0.5 (6)` and RUS `1.0.6 (9)`
+  in their corresponding `build-local` regional directories. Existing signing
+  certificates were preserved.
+- EURO TestFlight `202610251948` and RUS `202610251951` are `VALID` and
+  `IN_BETA_TESTING`, linked to their existing internal groups. No external
+  invitations, role changes or App Review submissions were made.
+- The optional `browserCheckUrl` returned by `/api/auth/native/start` is opened
+  in the same system authentication browser as the provider. JavaScript
+  redirects to the allowlisted provider; `noscript` returns through an HTTPS
+  endpoint to the validated regional app callback with `javascript_disabled`.
+  No embedded provider WebView, private preferences or user-agent spoofing.
+- A native popup preserves input and offers Settings, Retry and Back. Retry
+  starts a fresh flow only after an explicit tap. An invalid/expired/replayed
+  state cannot open this flow or exchange a ticket. The check needs internet;
+  it does not inspect Safari settings while the app is offline.
+- iOS has no public URL to Safari's JavaScript toggle. The button uses
+  `UIApplication.openSettingsURLString` (the app's own settings), with directions
+  to Settings > Apps > Safari > Advanced > JavaScript. Android uses public
+  `Settings.ACTION_SETTINGS`, not a purported direct Chrome JavaScript link.
+  Popup translations are bundled offline for all eight supported locales;
+  EURO still excludes Russian from its language selector.
+- Server auth changes passed tests and isolated builds in
+  `/home/vel/builds/native-js-check-20261025/`, but activation is pending approval.
+  Against the old API these apps fall back to the original authorization URL,
+  without automatic detection. Deploy both regional API changes to enable it.
+  No SQL migration, frontend build, worker restart or AI-chat change is needed.
+- Verified: 58 app tests, 8 EURO and 11 RUS backend tests, Java/Swift helper tests,
+  signed Mac builds, an Android emulator UI test (popup, input preservation and
+  public Settings action), and six real headless Chromium cases (three providers with
+  JavaScript on/off). Provider requests were intercepted before contacting
+  Google/Yandex/VK; real accounts and physical iPhone testing remain manual.
+
 ## VK and EURO Languages: 25 October 2026
 
 - Source: `0a213e3` on `feature/ios-euro-app`.
