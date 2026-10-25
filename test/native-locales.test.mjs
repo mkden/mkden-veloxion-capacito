@@ -21,3 +21,19 @@ test('language preference bridge is separate from session handoff and restricted
   }
   assert.match(read('ios/App/App.xcodeproj/project.pbxproj'), /NativeAuthLocale.swift in Sources/);
 });
+
+test('disabled JavaScript opens a native settings prompt with honest navigation limits in all languages', () => {
+  const copies = JSON.parse(read('www/native-browser-check.json'));
+  assert.deepEqual(Object.keys(copies).sort(), ['de','en','es','fr','it','pl','ru','zh']);
+  for (const copy of Object.values(copies)) {
+    assert.deepEqual(Object.keys(copy).sort(),Object.keys(copies.en).sort());
+    for (const value of Object.values(copy)) assert.ok(typeof value==='string' && value.trim());
+    assert.match(copy.javascriptIos,/Safari/);
+  }
+  for (const path of ['android/app/src/main/java/io/veloxion/app/NativeAuthActivity.java','ios/App/App/NativeAuthViewController.swift']) {
+    const source = read(path); assert.match(source,/showJavaScriptRequired/); assert.match(source,/browserCheckUrl/); assert.match(source,/native-browser-check/);
+    assert.doesNotMatch(source,/App-prefs:|prefs:root|WebKitJavaScriptEnabled/);
+  }
+  assert.match(read('ios/App/App/NativeAuthViewController.swift'),/UIApplication.openSettingsURLString/);
+  assert.match(read('android/app/src/main/java/io/veloxion/app/NativeAuthActivity.java'),/Settings.ACTION_SETTINGS/);
+});

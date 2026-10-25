@@ -20,6 +20,11 @@ public final class NativeOAuthFlowTests {
             String base=bundle+"://oauth/callback?state="+flow.state, code="a".repeat(43);
             check(flow.callback(base+"&code="+code).get("code").equals(code));
             check(flow.callback(base+"&error=cancelled").get("error").equals("cancelled"));
+            check(flow.callback(base+"&error=javascript_disabled").get("error").equals("javascript_disabled"));
+            String host=bundle.equals("eu.veloxion.app")?"veloxion.eu":"api.veloxion.io";
+            String browser="https://"+host+"/api/auth/native/browser-check?state=native_"+"a".repeat(43);
+            check(flow.browserCheck(browser).getHost().equals(host));
+            for (String bad:new String[]{browser.replace("https:","http:"),browser.replace(host,"evil.invalid"),browser+"&next=private",browser+"#fragment",browser.replace("browser-check","other"),browser.replace(host,"user@"+host),browser.replace(host,host+":444")}) rejects(()->flow.browserCheck(bad));
             rejects(()->flow.callback(base+"&code="+code+"&code="+code));
             rejects(()->flow.callback(base+"&code="+code+"&error=denied"));
             rejects(()->flow.callback(base+"&token=private"));

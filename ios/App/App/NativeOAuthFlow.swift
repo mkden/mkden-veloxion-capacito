@@ -37,7 +37,15 @@ struct NativeOAuthFlow {
         }
         guard params["state"] == state, (params["code"] != nil) != (params["error"] != nil) else { throw Failure.invalid }
         if let code = params["code"], code.range(of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) == nil { throw Failure.invalid }
-        if let error = params["error"], !["cancelled", "denied", "registration_required"].contains(error) { throw Failure.invalid }
+        if let error = params["error"], !["cancelled", "denied", "registration_required", "javascript_disabled"].contains(error) { throw Failure.invalid }
         return params
+    }
+    func browserCheck(_ raw: String) throws -> URL {
+        guard let url = URL(string: raw), url.scheme == "https", url.user == nil, url.password == nil,
+              url.port == nil, url.fragment == nil,
+              url.host == (scheme == "eu.veloxion.app" ? "veloxion.eu" : "api.veloxion.io"),
+              url.path == "/api/auth/native/browser-check", let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedQuery,
+              query.range(of: "^state=native_[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil else { throw Failure.invalid }
+        return url
     }
 }

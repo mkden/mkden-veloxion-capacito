@@ -39,6 +39,14 @@ public final class NativeOAuthFlow {
             || url.getUserInfo()!=null || (url.getPort()!=-1 && url.getPort()!=443) || url.getFragment()!=null) throw new IllegalArgumentException("Invalid provider URL");
         return url;
     }
+    public URI browserCheck(String raw) throws Exception {
+        URI url=new URI(raw);
+        String host=scheme.equals("eu.veloxion.app")?"veloxion.eu":"api.veloxion.io";
+        if (!"https".equals(url.getScheme()) || !host.equals(url.getHost()) || !"/api/auth/native/browser-check".equals(url.getPath())
+            || url.getUserInfo()!=null || url.getPort()!=-1 || url.getFragment()!=null || url.getRawQuery()==null
+            || !url.getRawQuery().matches("state=native_[A-Za-z0-9_-]{43}")) throw new IllegalArgumentException("Invalid browser check URL");
+        return url;
+    }
     public Map<String,String> callback(String raw) throws Exception {
         URI url=new URI(raw);
         if (raw.length()>4096 || !scheme.equals(url.getScheme()) || !"oauth".equals(url.getHost()) || !"/callback".equals(url.getPath())
@@ -54,7 +62,7 @@ public final class NativeOAuthFlow {
         if (received==null || !MessageDigest.isEqual(state.getBytes(StandardCharsets.US_ASCII),received.getBytes(StandardCharsets.UTF_8))) throw new IllegalArgumentException("Invalid state");
         if (params.containsKey("code")==params.containsKey("error")) throw new IllegalArgumentException("Invalid callback");
         if (params.containsKey("code") && !params.get("code").matches("[A-Za-z0-9_-]{43}")) throw new IllegalArgumentException("Invalid code");
-        if (params.containsKey("error") && !params.get("error").matches("cancelled|denied|registration_required")) throw new IllegalArgumentException("Invalid error");
+        if (params.containsKey("error") && !params.get("error").matches("cancelled|denied|registration_required|javascript_disabled")) throw new IllegalArgumentException("Invalid error");
         return params;
     }
 }

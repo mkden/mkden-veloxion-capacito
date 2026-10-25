@@ -16,6 +16,12 @@ import CryptoKit
             precondition(result["code"] == code)
             let cancelled = try flow.callback(URL(string: base + "&error=cancelled")!)
             precondition(cancelled["error"] == "cancelled")
+            let disabled = try flow.callback(URL(string: base + "&error=javascript_disabled")!)
+            precondition(disabled["error"] == "javascript_disabled")
+            let host = bundle == "eu.veloxion.app" ? "veloxion.eu" : "api.veloxion.io"
+            let check = "https://" + host + "/api/auth/native/browser-check?state=native_" + String(repeating: "a", count: 43)
+            _ = try flow.browserCheck(check)
+            for bad in [check.replacingOccurrences(of: "https:", with: "http:"), check.replacingOccurrences(of: host, with: "evil.invalid"), check + "&next=private", check + "#fragment", check.replacingOccurrences(of: "browser-check", with: "other"), check.replacingOccurrences(of: host, with: "user@" + host), check.replacingOccurrences(of: host, with: host + ":444")] { rejects { try flow.browserCheck(bad) } }
             for raw in [base + "&code=" + code + "&code=" + code, base + "&code=" + code + "&error=denied",
                         base + "&token=private", base + "&code=" + code + "#fragment",
                         base.replacingOccurrences(of: flow.state, with: "invalid") + "&code=" + code,

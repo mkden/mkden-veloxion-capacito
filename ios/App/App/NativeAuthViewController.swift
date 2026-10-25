@@ -93,6 +93,11 @@ import AuthenticationServices
             }
             dictionaries.merge(extra) { _, new in new }
         }
+        guard let checkUrl = Bundle.main.url(forResource: "native-browser-check", withExtension: "json", subdirectory: "public"),
+              let checkData = try? Data(contentsOf: checkUrl), let checks = try? JSONSerialization.jsonObject(with: checkData) as? [String: [String: String]] else {
+            preconditionFailure("Bundled browser check translations are missing")
+        }
+        for (code, labels) in checks where dictionaries[code] != nil { dictionaries[code]?.merge(labels) { _, new in new } }
         locale = api.region.euro ? NativeAuthLocale.current : "ru"
         guard let labels = dictionaries[locale] else { preconditionFailure("Missing authentication language") }
         strings = labels
@@ -329,13 +334,14 @@ import AuthenticationServices
         do { flow = try NativeOAuthFlow(bundle: Bundle.main.bundleIdentifier!, selectedProvider: provider) }
         catch { showNotice(t("server")); return }
         let revision = NativeAuthStore.shared.revision
-        let body: [String: Any] = ["provider": flow.provider, "platform": "ios", "state": flow.state,
+        let body: [String: Any] = ["provider": flow.provider, "platform": "ios", "state": flow.state, "locale": locale,
                                   "codeChallenge": flow.challenge, "intent": registering ? "register" : "login", "termsAccepted": registering && consent.isSelected]
         view.endEditing(true)
         run { [self] in
             let response = try await api.request("/auth/native/start", body: body)
             guard NativeAuthStore.shared.revision == revision else { throw NativeAuthFailure("expired") }
-            let url = try flow.authorization(response["authorizationUrl"] as? String ?? "")
+            let authorization = try flow.authorization(response["authorizationUrl"] as? String ?? "")
+            let url = try (response["browserCheckUrl"] as? String).map { try flow.browserCheck($0) } ?? authorization
             let session = ASWebAuthenticationSession(url: url, callbackURLScheme: flow.scheme) { [weak self] url, error in
                 Task { @MainActor [weak self] in
                     guard let self = self, self.providerFlow?.state == flow.state else { return }
@@ -356,7 +362,8 @@ import AuthenticationServices
         catch { showNotice(t("denied")); return }
         guard NativeAuthStore.shared.revision == revision else { showNotice(t("expired")); return }
         if let error = callback["error"] {
-            if error == "registration_required" { selectMode(true); showNotice(t("registrationRequired")) }
+            if error == "javascript_disabled" { showJavaScriptRequired(provider: flow.provider) }
+            else if error == "registration_required" { selectMode(true); showNotice(t("registrationRequired")) }
             else { showNotice(t(error == "cancelled" ? "providerCancelled" : "denied")) }
             return
         }
@@ -370,6 +377,17 @@ import AuthenticationServices
             password.text = ""; confirm.text = ""; self.code.text = ""
             openWorkspace(webAuth: false)
         }
+    }
+    private func showJavaScriptRequired(provider: String) {
+        showNotice(t("javascriptTitle"))
+        let alert = UIAlertController(title: t("javascriptTitle"), message: t("javascriptIos"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: t("javascriptSettings"), style: .default) { _ in
+            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+            UIApplication.shared.open(url)
+        })
+        alert.addAction(UIAlertAction(title: t("javascriptRetry"), style: .default) { [weak self] _ in self?.startProvider(provider) })
+        alert.addAction(UIAlertAction(title: t("back"), style: .cancel))
+        present(alert, animated: true)
     }
     @objc private func otherMethods() { run { [self] in try await api.checkSite(); openWorkspace(webAuth: true) } }
     @objc private func openLegal(_ sender: UIButton) {

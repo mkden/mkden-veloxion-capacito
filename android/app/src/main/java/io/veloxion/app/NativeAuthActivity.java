@@ -69,6 +69,15 @@ public class NativeAuthActivity extends AppCompatActivity {
                 JSONObject additional=new JSONObject(data.toString("UTF-8"));
                 for (String key:NativeAuthLocale.CODES) if (additional.has(key)) locales.put(key,additional.getJSONObject(key));
             }
+            try (java.io.InputStream check=getAssets().open("public/native-browser-check.json")) {
+                java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream();
+                while ((count=check.read(buffer))!=-1) data.write(buffer,0,count);
+                JSONObject checks=new JSONObject(data.toString("UTF-8"));
+                for (java.util.Iterator<String> codes=locales.keys();codes.hasNext();) {
+                    String key=codes.next(); JSONObject extra=checks.getJSONObject(key), dictionary=locales.getJSONObject(key);
+                    for (java.util.Iterator<String> keys=extra.keys();keys.hasNext();) { String name=keys.next(); dictionary.put(name,extra.getString(name)); }
+                }
+            }
             locale=api.euro?NativeAuthLocale.resolve(getSharedPreferences(NativeAuthLocale.PREFERENCES,MODE_PRIVATE).getString(NativeAuthLocale.KEY,""),Locale.getDefault().toLanguageTag()):"ru";
             strings = locales.getJSONObject(locale);
         } catch (Exception error) { throw new IllegalStateException("Bundled authentication translations are missing", error); }
@@ -300,13 +309,14 @@ public class NativeAuthActivity extends AppCompatActivity {
         final NativeOAuthFlow flow; final JSONObject body;
         try {
             flow=new NativeOAuthFlow(getPackageName(),provider,AuthSessionStore.revision.get(),SystemClock.elapsedRealtime());
-            body=new JSONObject().put("provider",flow.provider).put("platform","android").put("state",flow.state)
+            body=new JSONObject().put("provider",flow.provider).put("platform","android").put("state",flow.state).put("locale",locale)
                 .put("codeChallenge",flow.challenge).put("intent",registering?"register":"login").put("termsAccepted",registering && consent.isChecked());
         } catch (Exception ignored) { showNotice(t("server")); return; }
         run(form->api.request("/auth/native/start",body,null), data->{
             try {
                 if (flow.revision!=AuthSessionStore.revision.get()) throw new IllegalStateException();
-                android.net.Uri url=android.net.Uri.parse(flow.authorization(data.getString("authorizationUrl")).toString());
+                java.net.URI authorization=flow.authorization(data.getString("authorizationUrl"));
+                android.net.Uri url=android.net.Uri.parse((data.has("browserCheckUrl")?flow.browserCheck(data.getString("browserCheckUrl")):authorization).toString());
                 oauthFlow=flow; oauthLeft=false; update(); showNotice(t("providerWaiting"));
                 CustomTabsIntent tab=new CustomTabsIntent.Builder().setShowTitle(true).build();
                 tab.intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY); tab.launchUrl(this,url);
@@ -326,7 +336,8 @@ public class NativeAuthActivity extends AppCompatActivity {
         oauthFlow=null; oauthLeft=false; update();
         if (callback.containsKey("error")) {
             String problem=callback.get("error");
-            if (problem.equals("registration_required")) { selectMode(true); showNotice(t("registrationRequired")); }
+            if (problem.equals("javascript_disabled")) showJavaScriptRequired(flow.provider);
+            else if (problem.equals("registration_required")) { selectMode(true); showNotice(t("registrationRequired")); }
             else showNotice(t(problem.equals("cancelled")?"providerCancelled":"denied"));
             return;
         }
@@ -334,6 +345,16 @@ public class NativeAuthActivity extends AppCompatActivity {
             JSONObject session=api.session(api.request("/auth/native/exchange",new JSONObject().put("code",callback.get("code")).put("codeVerifier",flow.verifier),null));
             api.validate(session.getString("accessToken")); store.save(session,flow.revision); api.checkSite(); return session;
         }, ignored->{ password.setText(""); confirm.setText(""); code.setText(""); openWorkspace(false); });
+    }
+    private void showJavaScriptRequired(String provider) {
+        showNotice(t("javascriptTitle"));
+        new androidx.appcompat.app.AlertDialog.Builder(this).setTitle(t("javascriptTitle")).setMessage(t("javascriptAndroid"))
+            .setPositiveButton(t("javascriptSettings"),(dialog,which)->{
+                try { startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)); }
+                catch (android.content.ActivityNotFoundException ignored) { showNotice(t("javascriptAndroid")); }
+            })
+            .setNeutralButton(t("javascriptRetry"),(dialog,which)->startProvider(provider))
+            .setNegativeButton(t("back"),null).show();
     }
     private boolean isProviderCallback(Intent intent) {
         android.net.Uri url=intent.getData();

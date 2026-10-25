@@ -1,0 +1,50 @@
+{
+  "en": {
+    "javascriptTitle": "JavaScript is turned off",
+    "javascriptIos": "To sign in with Google, Yandex or VK, enable JavaScript: Settings > Apps > Safari > Advanced > JavaScript. The button opens Veloxion's settings; return to the apps list and choose Safari. Then return here and retry. iOS does not provide a direct link to Safari's JavaScript switch.",
+    "javascriptAndroid": "In your browser, open Settings > Site settings > JavaScript and allow JavaScript. The button opens Android settings, not the browser's JavaScript switch. Return to Veloxion and retry after enabling it.",
+    "javascriptSettings": "Open Settings", "javascriptRetry": "Try again"
+  },
+  "ru": {
+    "javascriptTitle": "JavaScript выключен",
+    "javascriptIos": "Для входа через Google, Яндекс или VK включите JavaScript: Настройки > Приложения > Safari > Дополнительные параметры > JavaScript. Кнопка откроет настройки Veloxion: вернитесь в список приложений и выберите Safari. Затем вернитесь сюда и повторите вход. Прямой переход к переключателю JavaScript iOS не разрешает.",
+    "javascriptAndroid": "В браузере откройте Настройки > Настройки сайтов > JavaScript и разрешите JavaScript. Кнопка откроет настройки Android, а не переключатель JavaScript браузера. После включения вернитесь в Veloxion и повторите вход.",
+    "javascriptSettings": "Открыть настройки", "javascriptRetry": "Повторить вход"
+  },
+  "de": {
+    "javascriptTitle": "JavaScript ist deaktiviert",
+    "javascriptIos": "Aktiviere für Google, Yandex oder VK JavaScript: Einstellungen > Apps > Safari > Erweitert > JavaScript. Die Schaltfläche öffnet die Veloxion-Einstellungen. Gehe zurück zur App-Liste und wähle Safari. Kehre danach zurück und versuche die Anmeldung erneut. iOS erlaubt keinen direkten Link zum JavaScript-Schalter.",
+    "javascriptAndroid": "Öffne im Browser Einstellungen > Website-Einstellungen > JavaScript und erlaube JavaScript. Die Schaltfläche öffnet die Android-Einstellungen, nicht den JavaScript-Schalter im Browser. Kehre danach zu Veloxion zurück und versuche es erneut.",
+    "javascriptSettings": "Einstellungen öffnen", "javascriptRetry": "Erneut anmelden"
+  },
+  "it": {
+    "javascriptTitle": "JavaScript è disattivato",
+    "javascriptIos": "Per accedere con Google, Yandex o VK, attiva JavaScript: Impostazioni > App > Safari > Avanzate > JavaScript. Il pulsante apre le impostazioni di Veloxion: torna all'elenco delle app e scegli Safari. Poi torna qui e riprova. iOS non consente un collegamento diretto all'interruttore JavaScript.",
+    "javascriptAndroid": "Nel browser apri Impostazioni > Impostazioni sito > JavaScript e consenti JavaScript. Il pulsante apre le impostazioni Android, non l'interruttore JavaScript del browser. Poi torna a Veloxion e riprova.",
+    "javascriptSettings": "Apri impostazioni", "javascriptRetry": "Riprova ad accedere"
+  },
+  "es": {
+    "javascriptTitle": "JavaScript está desactivado",
+    "javascriptIos": "Para acceder con Google, Yandex o VK, activa JavaScript: Ajustes > Apps > Safari > Avanzado > JavaScript. El botón abre los ajustes de Veloxion: vuelve a la lista de apps y elige Safari. Después vuelve aquí e inténtalo de nuevo. iOS no permite enlazar directamente al interruptor JavaScript.",
+    "javascriptAndroid": "En el navegador abre Configuración > Configuración de sitios > JavaScript y permite JavaScript. El botón abre los ajustes de Android, no el interruptor JavaScript del navegador. Después vuelve a Veloxion y reintenta el acceso.",
+    "javascriptSettings": "Abrir ajustes", "javascriptRetry": "Reintentar acceso"
+  },
+  "fr": {
+    "javascriptTitle": "JavaScript est désactivé",
+    "javascriptIos": "Pour Google, Yandex ou VK, activez JavaScript : Réglages > Apps > Safari > Avancé > JavaScript. Le bouton ouvre les réglages de Veloxion : revenez à la liste des apps et choisissez Safari. Revenez ensuite ici et réessayez. iOS ne propose pas de lien direct vers le réglage JavaScript.",
+    "javascriptAndroid": "Dans le navigateur, ouvrez Paramètres > Paramètres des sites > JavaScript et autorisez JavaScript. Le bouton ouvre les paramètres Android, pas le réglage JavaScript du navigateur. Revenez ensuite à Veloxion et réessayez.",
+    "javascriptSettings": "Ouvrir les réglages", "javascriptRetry": "Réessayer la connexion"
+  },
+  "pl": {
+    "javascriptTitle": "JavaScript jest wyłączony",
+    "javascriptIos": "Aby używać Google, Yandex lub VK, włącz JavaScript: Ustawienia > Aplikacje > Safari > Zaawansowane > JavaScript. Przycisk otwiera ustawienia Veloxion: wróć do listy aplikacji i wybierz Safari. Następnie wróć tutaj i ponów logowanie. iOS nie udostępnia bezpośredniego łącza do przełącznika JavaScript.",
+    "javascriptAndroid": "W przeglądarce otwórz Ustawienia > Ustawienia witryn > JavaScript i zezwól na JavaScript. Przycisk otwiera ustawienia Androida, nie przełącznik JavaScript przeglądarki. Następnie wróć do Veloxion i ponów logowanie.",
+    "javascriptSettings": "Otwórz ustawienia", "javascriptRetry": "Ponów logowanie"
+  },
+  "zh": {
+    "javascriptTitle": "JavaScript 已关闭",
+    "javascriptIos": "使用 Google、Yandex 或 VK 登录需要开启 JavaScript：设置 > App > Safari > 高级 > JavaScript。按钮将打开 Veloxion 的设置，请返回 App 列表并选择 Safari，然后回到此处重试。iOS 不提供直接跳转到 JavaScript 开关的链接。",
+    "javascriptAndroid": "请在浏览器中打开设置 > 网站设置 > JavaScript，并允许 JavaScript。按钮将打开 Android 设置，而不是浏览器的 JavaScript 开关。开启后返回 Veloxion 重试。",
+    "javascriptSettings": "打开设置", "javascriptRetry": "重新登录"
+  }
+}
