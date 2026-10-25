@@ -19,7 +19,9 @@ workflows:
       - name: Install, test and prepare EURO
         script: |
           npm ci
-          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs
+          swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
+          /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
           node scripts/prepare-ios-region.mjs euro
           npx cap sync ios
           printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict/></plist>' > ios/App/App/GoogleService-Info.plist
@@ -62,7 +64,9 @@ workflows:
       - name: Install, test and prepare RUS
         script: |
           npm ci
-          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs
+          swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
+          /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
           node scripts/prepare-ios-region.mjs rus
           test -n "$VELOXION_RUS_FIREBASE_PLIST"
           printf '%s' "$VELOXION_RUS_FIREBASE_PLIST" | base64 --decode > GoogleService-Info.plist

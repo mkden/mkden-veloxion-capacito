@@ -13,7 +13,14 @@
     "rate": "Too many attempts. Please wait before trying again.", "server": "Veloxion is temporarily unavailable. Please try again later.",
     "expired": "Please sign in again to continue.", "secure": "Your session is stored securely on this device. Passwords and codes are never saved.",
     "other": "Other sign-in methods (online)", "emailLogin": "Sign in with email", "phoneLogin": "Sign in with phone",
-    "wait": "Wait before requesting another code.", "restore": "Checking your saved session..."
+    "wait": "Wait before requesting another code.", "restore": "Checking your saved session...",
+    "brandSubtitle": "Your content workspace", "loginTitle": "Welcome back", "registerTitle": "Create your account", "codeTitle": "Verify your account",
+    "loginIntro": "Your projects, images and ideas in one place.", "registerIntro": "One account for all Veloxion AI products.",
+    "offlineHint": "This screen works offline. An internet connection is required to sign in.",
+    "rulesShort": "Rules", "privacyShort": "Privacy", "offerShort": "Terms",
+    "invalidPhone": "Enter the full phone number: +7 (999) 123-45-67.", "invalidEmail": "Enter a valid email address.",
+    "invalidName": "Enter your name.", "invalidConsent": "Accept the terms to create an account.",
+    "invalidPassword": "Check your password. For registration, use at least 6 characters and repeat it exactly.", "invalidCode": "Enter the verification code (4 to 8 digits)."
   },
   "ru": {
     "title": "Ваше творческое пространство",
@@ -29,6 +36,13 @@
     "rate": "Слишком много попыток. Подождите и попробуйте позже.", "server": "Veloxion временно недоступен. Попробуйте немного позже.",
     "expired": "Для продолжения войдите в аккаунт заново.", "secure": "Сессия защищена на этом устройстве. Пароли и коды не сохраняются.",
     "other": "Другие способы входа (онлайн)", "emailLogin": "Войти по email", "phoneLogin": "Войти по телефону",
-    "wait": "Подождите перед повторной отправкой кода.", "restore": "Проверяем сохранённую сессию..."
+    "wait": "Подождите перед повторной отправкой кода.", "restore": "Проверяем сохранённую сессию...",
+    "brandSubtitle": "Ваше пространство для контента", "loginTitle": "С возвращением", "registerTitle": "Создайте аккаунт", "codeTitle": "Подтвердите вход",
+    "loginIntro": "Все ваши проекты, изображения и идеи в одном месте.", "registerIntro": "Один аккаунт для всех продуктов Veloxion AI.",
+    "offlineHint": "Экран доступен офлайн. Для входа потребуется интернет.",
+    "rulesShort": "Правила", "privacyShort": "Политика", "offerShort": "Оферта",
+    "invalidPhone": "Введите номер полностью: +7 (999) 123-45-67.", "invalidEmail": "Введите корректный email.",
+    "invalidName": "Укажите ваше имя.", "invalidConsent": "Для регистрации примите условия сервиса.",
+    "invalidPassword": "Проверьте пароль. При регистрации нужно от 6 символов и точное совпадение паролей.", "invalidCode": "Введите код подтверждения: от 4 до 8 цифр."
   }
 }
