@@ -33,7 +33,7 @@ public class NativeAuthActivity extends AppCompatActivity {
     private JSONObject strings;
     private LinearLayout content;
     private final java.util.Map<EditText, LinearLayout> rows = new java.util.HashMap<>();
-    private Typeface font;
+    private Typeface font, strongFont;
     private TextView heading, intro, identityLabel;
     private EditText name, identity, password, confirm, code;
     private CheckBox consent;
@@ -65,12 +65,12 @@ public class NativeAuthActivity extends AppCompatActivity {
     }
     private TextView text(String value, int size, boolean bold) {
         TextView view = new TextView(this); view.setText(value); view.setTextSize(size); view.setTextColor(Color.rgb(20,35,58));
-        view.setTypeface(font, bold ? Typeface.BOLD : Typeface.NORMAL);
+        view.setTypeface(bold ? strongFont : font);
         view.setPadding(0, dp(6), 0, dp(6)); content.addView(view); return view;
     }
     private EditText field(String key, int type) {
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.VERTICAL);
-        TextView label = new TextView(this); label.setText(t(key)); label.setTextSize(13); label.setTypeface(font,Typeface.BOLD); label.setTextColor(0xff435972);
+        TextView label = new TextView(this); label.setText(t(key)); label.setTextSize(13); label.setTypeface(strongFont); label.setTextColor(0xff435972);
         label.setPadding(0,dp(12),0,dp(6)); row.addView(label);
         EditText view = new EditText(this); view.setHint(t(key)); view.setTextSize(16); view.setInputType(type); view.setTypeface(font); view.setMinHeight(dp(54));
         view.setSingleLine(true); view.setTextColor(Color.rgb(20,35,58)); view.setHintTextColor(Color.rgb(97,113,139));
@@ -81,7 +81,8 @@ public class NativeAuthActivity extends AppCompatActivity {
     }
     private Button button(String key, Runnable action, boolean primary) {
         Button view = new Button(this); view.setText(t(key)); view.setAllCaps(false); view.setTextSize(15);
-        view.setTypeface(font,Typeface.BOLD); view.setMinHeight(dp(primary?54:44)); view.setPadding(dp(10),dp(10),dp(10),dp(10));
+        view.setTypeface(strongFont); view.setMinHeight(dp(primary?54:44)); view.setPadding(dp(10),dp(10),dp(10),dp(10));
+        view.setStateListAnimator(null); view.setElevation(0);
         view.setTextColor(primary ? Color.WHITE : Color.rgb(37,84,122));
         GradientDrawable bg = primary ? new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
             new int[]{Color.rgb(17,178,216),Color.rgb(110,91,226),Color.rgb(184,66,175)}) : background(Color.rgb(242,248,252),14);
@@ -90,7 +91,12 @@ public class NativeAuthActivity extends AppCompatActivity {
         content.addView(view,params); controls.add(view); view.setOnClickListener(v -> { if (!busy) action.run(); }); return view;
     }
     private void build() {
-        try { font=Typeface.createFromAsset(getAssets(),"public/fonts/Manrope.ttf"); } catch (RuntimeException ignored) { font=Typeface.DEFAULT; }
+        try {
+            if (android.os.Build.VERSION.SDK_INT>=26) {
+                font=new Typeface.Builder(getAssets(),"public/fonts/Manrope.ttf").setFontVariationSettings("'wght' 500").setWeight(500).build();
+                strongFont=new Typeface.Builder(getAssets(),"public/fonts/Manrope.ttf").setFontVariationSettings("'wght' 700").setWeight(700).build();
+            } else { font=Typeface.createFromAsset(getAssets(),"public/fonts/Manrope.ttf"); strongFont=Typeface.create(font,Typeface.BOLD); }
+        } catch (RuntimeException ignored) { font=Typeface.DEFAULT; strongFont=Typeface.DEFAULT_BOLD; }
         ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true);
         scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{0xffdff4fa,0xffedf5f9,0xffece7fa}));
         android.widget.FrameLayout frame = new android.widget.FrameLayout(this);
@@ -120,7 +126,8 @@ public class NativeAuthActivity extends AppCompatActivity {
         loginTab=new Button(this); registerTab=new Button(this);
         Button[] tabButtons={loginTab,registerTab};
         for (int i=0;i<tabButtons.length;i++) {
-            Button tab=tabButtons[i]; final boolean registration=i==1; tab.setAllCaps(false); tab.setText(t(registration?"register":"login")); tab.setTextSize(14); tab.setTypeface(font,Typeface.BOLD);
+            Button tab=tabButtons[i]; final boolean registration=i==1; tab.setAllCaps(false); tab.setText(t(registration?"register":"login")); tab.setTextSize(14); tab.setTypeface(strongFont);
+            tab.setStateListAnimator(null); tab.setElevation(0);
             tab.setPadding(dp(8),dp(10),dp(8),dp(10)); tab.setMinHeight(dp(44)); tab.setMinimumWidth(0); tab.setBackgroundTintList(null);
             tab.setOnClickListener(v -> selectMode(registration)); tabs.addView(tab,new LinearLayout.LayoutParams(0,-2,1)); controls.add(tab);
         }

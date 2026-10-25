@@ -12,7 +12,9 @@ import CoreText
     }()
     static func font(_ size: CGFloat, bold: Bool = false) -> UIFont {
         let base = fontName.flatMap { UIFont(name: $0, size: size) } ?? .systemFont(ofSize: size)
-        let descriptor = base.fontDescriptor.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: (bold ? UIFont.Weight.bold : .regular).rawValue]])
+        let descriptor = base.fontDescriptor.addingAttributes([
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [NSNumber(value: 0x77676874): NSNumber(value: bold ? 700 : 500)]
+        ])
         return UIFontMetrics.default.scaledFont(for: UIFont(descriptor: descriptor, size: size))
     }
 }

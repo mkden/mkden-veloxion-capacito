@@ -41,6 +41,9 @@ test('native layouts bundle the LK logo/font offline and only mask phone identit
   assert.match(android, /formatting \|\| usesEmail\(\)/);
   assert.match(ios, /textField === identity, !usesEmail/);
   assert.match(android, /consent.setChecked\(false\)/);
+  assert.ok(android.includes('setFontVariationSettings("\'wght\' 500")'));
+  assert.ok(android.includes('setFontVariationSettings("\'wght\' 700")'));
   assert.match(ios, /consent.isSelected = false/);
+  assert.match(ios, /kCTFontVariationAttribute/);
   assert.match(read('ios/App/App.xcodeproj/project.pbxproj'), /NativePhoneMask.swift in Sources/);
 });
