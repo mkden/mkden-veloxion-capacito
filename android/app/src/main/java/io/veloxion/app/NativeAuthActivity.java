@@ -82,8 +82,10 @@ public class NativeAuthActivity extends AppCompatActivity {
             strings = locales.getJSONObject(locale);
         } catch (Exception error) { throw new IllegalStateException("Bundled authentication translations are missing", error); }
         build();
+        boolean hasSavedSession=store.read()!=null;
+        generation=AuthSessionStore.revision.get();
         if (isProviderCallback(getIntent())) showNotice(t("expired"));
-        else if (!getIntent().getBooleanExtra("skipRestore", false) && store.read() != null) restore();
+        else if (!getIntent().getBooleanExtra("skipRestore", false) && hasSavedSession) restore();
     }
 
     private String t(String key) { return strings.optString(key, key); }

@@ -14,8 +14,8 @@ android {
         manifestPlaceholders = [veloxionAppName: region.appName]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode requestedVersionCode ? Integer.parseInt(requestedVersionCode) : (regionName == 'euro' ? 7 : 10)
-        versionName requestedVersionName ?: (regionName == 'euro' ? '1.0.6' : '1.0.7')
+        versionCode requestedVersionCode ? Integer.parseInt(requestedVersionCode) : (regionName == 'euro' ? 8 : 11)
+        versionName requestedVersionName ?: (regionName == 'euro' ? '1.0.7' : '1.0.8')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

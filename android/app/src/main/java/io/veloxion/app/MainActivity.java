@@ -85,7 +85,7 @@ public class MainActivity extends BridgeActivity {
         loadingHandler.removeCallbacks(loadingExpired); if (loadingPanel!=null) loadingPanel.setVisibility(android.view.View.GONE);
     }
 
-    @Override protected void onDestroy() {loadingHandler.removeCallbacksAndMessages(null);super.onDestroy();}
+    @Override public void onDestroy() {loadingHandler.removeCallbacksAndMessages(null);super.onDestroy();}
 
     private void enqueueDownload(String url, String userAgent, String contentDisposition, String mimeType) {
         try {

@@ -1,5 +1,40 @@
 # Native Authentication (RUS / EURO)
 
+## Session Recovery: 26 October 2026
+
+- Core source: `e731c13`, with Android lifecycle/storage follow-up fixes. EURO
+  TestFlight `202610260755` and RUS `202610260758` are `VALID` and
+  `IN_BETA_TESTING` in their existing internal groups. No review submission,
+  external invitations or role changes.
+- Final APKs: RUS `1.0.8 (11)` and EURO `1.0.7 (8)` in their regional
+  `build-local` directories, preserving the previous signing certificates.
+- The native bridge validates/restores its saved session before exposing an
+  access token, and refreshes only after HTTP 401. Refresh tokens remain in
+  Keychain / Android Keystore. Network/5xx failures preserve saved credentials.
+  Revision checks prevent late validation from restoring a logged-out session
+  or erasing a replacement account. Corrupt Android storage is handled before
+  capturing the next login operation's revision.
+- A validated native session on `/auth` returns to `/lk` without reopening
+  native login. Old app builds retain their previous auth-route behavior.
+  `/products` is covered by the initial private-route handoff. Native bridge
+  promises have bounded waiting and recoverable Retry UI.
+- The native workspace loading screen stays visible until an origin-checked
+  `completeHandoff` confirmation. After 35 seconds it offers Retry and Back;
+  Back preserves credentials and never immediately auto-restores into the
+  same failed WebView. Native email/phone forms still work offline.
+- Both frontend builds were staged from the current server sources, tested and
+  deployed with rollback backups in `/home/vel/backups/native-session-20261026/`.
+  Only three source/test files and the compiled frontend were replaced per
+  region. APIs, workers, database data, keys, balances and AI chat were unchanged.
+- Verification: 58 app tests, 14 native-session frontend tests per region,
+  TypeScript checks, staged Next.js builds, and real compiled Swift restore,
+  refresh, outage and revision tests in both signed Mac workflows. Browser
+  handoff tests cover 12 passing scenarios with fixture API responses, never
+  real users or payments.
+  Android APK builds/signatures passed; the new instrumentation test is included
+  but cannot run locally while the host emulator rejects its HAXM hypervisor.
+  Real provider login and physical-device testing remain required.
+
 ## JavaScript Check: 25 October 2026
 
 - Native source: `503ec14`. Signed APKs: EURO `1.0.5 (6)` and RUS `1.0.6 (9)`
