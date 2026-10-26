@@ -8,7 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-final class NativeAuthApi {
+class NativeAuthApi {
     final boolean euro;
     final String origin;
     final String api;
@@ -74,25 +74,26 @@ final class NativeAuthApi {
     }
 
     JSONObject restore(AuthSessionStore store) throws Exception {
+        int revision = AuthSessionStore.revision.get();
         JSONObject saved = store.read();
         if (saved == null) return null;
-        int revision = AuthSessionStore.revision.get();
         try { validate(saved.optString("accessToken")); }
         catch (Failure error) {
             if (error.status != 401) {
-                if (error.status == 403 || error.status == 404) store.clear();
+                if (error.status == 403 || error.status == 404) store.clear(revision);
                 throw error;
             }
-            if (saved.optString("refreshToken").isEmpty()) { store.clear(); throw error; }
+            if (saved.optString("refreshToken").isEmpty()) { store.clear(revision); throw error; }
             try {
                 saved = session(request("/auth/refresh", new JSONObject().put("refreshToken", saved.getString("refreshToken")), null));
                 validate(saved.getString("accessToken"));
                 store.save(saved, revision);
             } catch (Failure refreshError) {
-                if (refreshError.status == 400 || refreshError.status == 401 || refreshError.status == 403 || refreshError.status == 404) store.clear();
+                if (refreshError.status == 400 || refreshError.status == 401 || refreshError.status == 403 || refreshError.status == 404) store.clear(revision);
                 throw refreshError;
             }
         }
+        if (AuthSessionStore.revision.get()!=revision) throw new Failure("expired",0);
         return saved;
     }
 

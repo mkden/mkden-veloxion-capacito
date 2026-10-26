@@ -24,6 +24,8 @@ workflows:
           /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
           swiftc ios/App/App/NativeOAuthFlow.swift ios/App/App/NativeAuthLocale.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
           /tmp/veloxion-oauth-tests
+          swiftc ios/App/App/NativeAuthSession.swift test/NativeAuthSessionTests.swift -o /tmp/veloxion-session-tests
+          /tmp/veloxion-session-tests
           node scripts/prepare-ios-region.mjs euro
           npx cap sync ios
           printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict/></plist>' > ios/App/App/GoogleService-Info.plist
@@ -71,6 +73,8 @@ workflows:
           /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
           swiftc ios/App/App/NativeOAuthFlow.swift ios/App/App/NativeAuthLocale.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
           /tmp/veloxion-oauth-tests
+          swiftc ios/App/App/NativeAuthSession.swift test/NativeAuthSessionTests.swift -o /tmp/veloxion-session-tests
+          /tmp/veloxion-session-tests
           node scripts/prepare-ios-region.mjs rus
           test -n "$VELOXION_RUS_FIREBASE_PLIST"
           printf '%s' "$VELOXION_RUS_FIREBASE_PLIST" | base64 --decode > GoogleService-Info.plist

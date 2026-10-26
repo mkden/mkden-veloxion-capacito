@@ -36,13 +36,23 @@ public class NativeAuthPlugin extends Plugin {
     }
     private void getSessionOnMain(PluginCall call) {
         if (!trusted()) { call.reject("Untrusted origin"); return; }
-        JSONObject saved=new AuthSessionStore(getContext()).read();
-        JSObject result=new JSObject(); result.put("accessToken",saved==null?"":saved.optString("accessToken"));
         boolean allowWeb=getActivity().getIntent().getBooleanExtra("webAuthAllowed",false);
-        result.put("webAuthAllowed",allowWeb);
-        result.put("beginWebAuth",allowWeb && !getActivity().getIntent().getBooleanExtra("webAuthStarted",false));
+        boolean begin=allowWeb && !getActivity().getIntent().getBooleanExtra("webAuthStarted",false);
         if (allowWeb) getActivity().getIntent().putExtra("webAuthStarted",true);
-        call.resolve(result);
+        worker.execute(()->{
+            try {
+                JSONObject saved=allowWeb?null:new NativeAuthApi(getContext()).restore(new AuthSessionStore(getContext()));
+                JSObject result=new JSObject(); result.put("accessToken",saved==null?"":saved.optString("accessToken"));
+                result.put("validated",!allowWeb); result.put("webAuthAllowed",allowWeb); result.put("beginWebAuth",begin);
+                call.resolve(result);
+            } catch (Exception ignored) { call.reject("Could not restore session"); }
+        });
+    }
+    @PluginMethod public void completeHandoff(PluginCall call) {
+        getActivity().runOnUiThread(()->{
+            if (!trusted()) { call.reject("Untrusted origin"); return; }
+            ((MainActivity)getActivity()).completeNativeSessionHandoff(); call.resolve();
+        });
     }
     @PluginMethod public void adoptSession(PluginCall call) {
         getActivity().runOnUiThread(() -> adoptSessionOnMain(call));
@@ -75,7 +85,7 @@ public class NativeAuthPlugin extends Plugin {
             android.webkit.CookieManager.getInstance().flush();
         }
         getActivity().runOnUiThread(() -> {
-            getActivity().startActivity(new Intent(getActivity(),NativeAuthActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK));
+            getActivity().startActivity(new Intent(getActivity(),NativeAuthActivity.class).putExtra("skipRestore",true).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK));
             call.resolve(); getActivity().finish();
         });
     }

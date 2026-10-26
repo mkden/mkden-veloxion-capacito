@@ -51,6 +51,7 @@ import AuthenticationServices
 
 /// UIKit remains the application root until authentication and site availability succeed.
 @MainActor final class NativeAuthViewController: UIViewController, UITextFieldDelegate, ASWebAuthenticationPresentationContextProviding {
+    var restoreSessionOnLaunch = true
     private let api = NativeAuthApi()
     private let stack = UIStackView()
     private let name = AuthField(), identity = AuthField(), password = AuthField(), confirm = AuthField(), code = AuthField()
@@ -184,7 +185,7 @@ import AuthenticationServices
         button(UIButton(type: .system), key: "other", selector: #selector(otherMethods))
         for key in ["offlineHint", "secure"] { let note = label(t(key), size: 12, muted: true); translatedLabels[note] = key; outer.addArrangedSubview(note) }
         update()
-        if NativeAuthStore.shared.read() != nil { restore() }
+        if restoreSessionOnLaunch && NativeAuthStore.shared.read() != nil { restore() }
     }
     private func configureLabel(_ label: UILabel, size: CGFloat, bold: Bool = false, muted: Bool = false) {
         label.numberOfLines = 0; label.font = AuthAppearance.font(size, bold: bold); label.adjustsFontForContentSizeCategory = true; label.textColor = muted ? AuthAppearance.muted : AuthAppearance.ink

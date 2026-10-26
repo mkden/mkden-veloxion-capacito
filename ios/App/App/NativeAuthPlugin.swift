@@ -7,6 +7,7 @@ public final class NativeAuthPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "NativeAuthPlugin"
     public let jsName = "VeloxionAuth"
     public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "completeHandoff", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getSession", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getLocale", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLocale", returnType: CAPPluginReturnPromise),
@@ -33,8 +34,20 @@ public final class NativeAuthPlugin: CAPPlugin, CAPBridgedPlugin {
             let allowed = app?.webAuthAllowed ?? false
             let begin = allowed && app?.webAuthStarted != true
             if allowed { app?.webAuthStarted = true }
-            call.resolve(["accessToken": NativeAuthStore.shared.read()?["accessToken"] ?? "",
-                          "webAuthAllowed": allowed, "beginWebAuth": begin])
+            Task { @MainActor in
+                do {
+                    let session = allowed ? nil : try await NativeAuthApi().restore()
+                    call.resolve(["accessToken": session?["accessToken"] ?? "",
+                                  "validated": !allowed, "webAuthAllowed": allowed, "beginWebAuth": begin])
+                } catch { call.reject("Could not restore session") }
+            }
+        }
+    }
+    @objc public func completeHandoff(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [self] in
+            guard NativeAuthRegion().trusts(webView?.url) else { call.reject("Untrusted origin"); return }
+            (bridge?.viewController as? VeloxionViewController)?.completeNativeSessionHandoff()
+            call.resolve()
         }
     }
     @objc public func adoptSession(_ call: CAPPluginCall) {
@@ -62,7 +75,8 @@ public final class NativeAuthPlugin: CAPPlugin, CAPBridgedPlugin {
                 let cookies = WKWebsiteDataStore.default().httpCookieStore
                 cookies.getAllCookies { list in list.forEach { cookies.delete($0) } }
             }
-            (UIApplication.shared.delegate as? AppDelegate)?.showNativeAuth()
+            // An explicit return to login must not immediately reopen the failed WebView.
+            (UIApplication.shared.delegate as? AppDelegate)?.showNativeAuth(restoreSession: false)
             call.resolve()
         }
     }

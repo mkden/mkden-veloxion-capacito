@@ -55,6 +55,10 @@ final class AuthSessionStore {
         }
     }
 
+    void clear(int expectedRevision) {
+        synchronized (AuthSessionStore.class) { if (revision.get()==expectedRevision) clear(); }
+    }
+
     void clear() {
         synchronized (AuthSessionStore.class) {
             revision.incrementAndGet();

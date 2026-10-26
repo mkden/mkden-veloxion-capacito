@@ -9,9 +9,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var webAuthAllowed = false
     var webAuthStarted = false
 
-    func showNativeAuth() {
+    func showNativeAuth(restoreSession: Bool = true) {
         webAuthAllowed = false
-        window?.rootViewController = NativeAuthViewController()
+        let auth = NativeAuthViewController()
+        auth.restoreSessionOnLaunch = restoreSession
+        window?.rootViewController = auth
         window?.makeKeyAndVisible()
     }
 

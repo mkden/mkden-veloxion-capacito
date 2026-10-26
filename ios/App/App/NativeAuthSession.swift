@@ -11,8 +11,8 @@ struct NativeAuthRegion {
     let euro: Bool
     let origin: String
     let api: String
-    init() {
-        switch Bundle.main.bundleIdentifier {
+    init(bundleIdentifier: String? = Bundle.main.bundleIdentifier) {
+        switch bundleIdentifier {
         case "io.veloxion.app": euro = false; origin = "https://veloxion.io"; api = "https://api.veloxion.io/api"
         case "eu.veloxion.app": euro = true; origin = "https://veloxion.eu"; api = "https://veloxion.eu/api"
         default: preconditionFailure("Unknown application region")
@@ -26,7 +26,14 @@ struct NativeAuthRegion {
     }
 }
 
-final class NativeAuthStore {
+protocol NativeSessionStorage: AnyObject {
+    var revision: Int { get }
+    func read() -> [String: String]?
+    func save(_ session: [String: String], revision: Int) throws
+    func clear(ifRevision expected: Int?)
+}
+
+final class NativeAuthStore: NativeSessionStorage {
     static let shared = NativeAuthStore()
     private let lock = NSLock()
     private var generation = 0
@@ -58,8 +65,9 @@ final class NativeAuthStore {
         }
         guard status == errSecSuccess else { throw NativeAuthFailure("server") }
     }
-    func clear() {
+    func clear(ifRevision expected: Int? = nil) {
         lock.lock(); defer { lock.unlock() }
+        if let expected = expected, generation != expected { return }
         generation += 1
         SecItemDelete(query as CFDictionary)
     }
@@ -73,8 +81,12 @@ private final class AuthNoRedirect: NSObject, URLSessionTaskDelegate {
 }
 
 final class NativeAuthApi {
-    let region = NativeAuthRegion()
-    private let client: URLSession = {
+    let region: NativeAuthRegion
+    private let client: URLSession
+    init(region: NativeAuthRegion = NativeAuthRegion(), client: URLSession? = nil) {
+        self.region = region; self.client = client ?? Self.makeClient()
+    }
+    private static func makeClient() -> URLSession {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 12
         config.timeoutIntervalForResource = 20
@@ -82,7 +94,7 @@ final class NativeAuthApi {
         config.httpCookieStorage = nil
         config.urlCache = nil
         return URLSession(configuration: config, delegate: AuthNoRedirect(), delegateQueue: nil)
-    }()
+    }
     static func checkedToken(_ token: String?) throws -> String {
         guard let token = token, !token.isEmpty, token.count <= 16384, !token.contains("\r"), !token.contains("\n") else {
             throw NativeAuthFailure("denied", 401)
@@ -125,27 +137,27 @@ final class NativeAuthApi {
               let id = user["id"], (Int(String(describing: id)) ?? 0) > 0,
               (user["is_blocked"] as? NSNumber)?.boolValue != true else { throw NativeAuthFailure("denied", 403) }
     }
-    func restore() async throws -> [String: String]? {
-        let store = NativeAuthStore.shared
-        guard var saved = store.read() else { return nil }
+    func restore(store: NativeSessionStorage = NativeAuthStore.shared) async throws -> [String: String]? {
         let revision = store.revision
+        guard var saved = store.read() else { return nil }
         do { try await validate(saved["accessToken"] ?? "") }
         catch let error as NativeAuthFailure {
             guard error.status == 401 else {
-                if error.status == 403 || error.status == 404 { store.clear() }
+                if error.status == 403 || error.status == 404 { store.clear(ifRevision: revision) }
                 throw error
             }
-            guard let refresh = saved["refreshToken"], !refresh.isEmpty else { store.clear(); throw error }
+            guard let refresh = saved["refreshToken"], !refresh.isEmpty else { store.clear(ifRevision: revision); throw error }
             do {
                 let response = try await request("/auth/refresh", body: ["refreshToken": refresh])
                 saved = try session(response)
                 try await validate(saved["accessToken"]!)
                 try store.save(saved, revision: revision)
             } catch let refreshError as NativeAuthFailure {
-                if [400,401,403,404].contains(refreshError.status) { store.clear() }
+                if [400,401,403,404].contains(refreshError.status) { store.clear(ifRevision: revision) }
                 throw refreshError
             }
         }
+        guard store.revision == revision else { throw NativeAuthFailure("expired") }
         return saved
     }
     func checkSite() async throws {
