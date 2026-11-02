@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { APPS } from './ci-testflight-prepare.mjs';
+import { REGIONS } from './prepare-ios-region.mjs';
 
 try {
   const region = process.argv[2];
@@ -19,11 +20,12 @@ try {
   const expected = JSON.parse(readFileSync('build/testflight/preflight.json', 'utf8'));
   const native = JSON.parse(readFileSync(join(appPath, 'capacitor.config.json'), 'utf8'));
   if (info.CFBundleIdentifier !== APPS[region].bundleId || String(info.CFBundleVersion) !== expected.buildNumber || native.appId !== APPS[region].bundleId
-    || native.server?.url !== (region === 'euro' ? 'https://veloxion.eu/lk' : 'https://veloxion.io/lk')) throw new Error('IPA identity, build number or website is incorrect.');
+    || native.server?.url !== REGIONS[region].url || info.CFBundleDisplayName !== REGIONS[region].appName
+    || native.appName !== REGIONS[region].appName) throw new Error('IPA identity, name, build number or website is incorrect.');
   const schemes = (info.CFBundleURLTypes || []).flatMap(type => type.CFBundleURLSchemes || []);
   if (schemes.length !== 1 || schemes[0] !== APPS[region].bundleId) throw new Error('IPA OAuth callback is not bound to the regional Bundle ID.');
   execFileSync('codesign', ['--verify', '--deep', '--strict', appPath], { stdio: 'pipe' });
-  const report = { success: true, region, appId: expected.appId, bundleId: info.CFBundleIdentifier, version: info.CFBundleShortVersionString, buildNumber: info.CFBundleVersion, website: native.server.url, signatureVerified: true, ipa };
+  const report = { success: true, region, appId: expected.appId, appName: info.CFBundleDisplayName, bundleId: info.CFBundleIdentifier, version: info.CFBundleShortVersionString, buildNumber: info.CFBundleVersion, website: native.server.url, signatureVerified: true, ipa };
   writeFileSync(`build/testflight/${region}-ipa.json`, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
 } catch (error) { console.error(error.message?.startsWith('Command failed') ? 'IPA verification command failed.' : error.message); process.exitCode = 1; }

@@ -13,7 +13,7 @@ public class NativeAuthPlugin extends Plugin {
         String current=getBridge().getWebView().getUrl();
         if (current==null) return false;
         Uri uri=Uri.parse(current);
-        String host=new NativeAuthApi(getContext()).euro?"veloxion.eu":"veloxion.io";
+        String host=new NativeAuthApi(getContext()).euro?"veloxion.ai":"veloxion.io";
         return "https".equals(uri.getScheme()) && (uri.getPort()==-1 || uri.getPort()==443)
             && (host.equals(uri.getHost()) || ("www."+host).equals(uri.getHost()));
     }

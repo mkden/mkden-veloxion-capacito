@@ -142,11 +142,12 @@ public class NativeAuthActivity extends AppCompatActivity {
             if (layout.width!=width) { layout.width=width; outer.setLayoutParams(layout); }
         });
         LinearLayout brand = new LinearLayout(this); brand.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        ImageView logo = new ImageView(this); logo.setContentDescription("Veloxion AI");
+        String appName = getApplicationInfo().loadLabel(getPackageManager()).toString();
+        ImageView logo = new ImageView(this); logo.setContentDescription(appName);
         try (java.io.InputStream image=getAssets().open("public/veloxion-logo.png")) { logo.setImageBitmap(BitmapFactory.decodeStream(image)); } catch (Exception ignored) {}
         brand.addView(logo,new LinearLayout.LayoutParams(dp(48),dp(48)));
         content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(dp(12),0,0,0);
-        text("Veloxion AI",18,true); brandSubtitle=text(api.euro?"EU / "+t("brandSubtitle"):t("brandSubtitle"),11,false); brandSubtitle.setTextColor(0xff61718b);
+        text(appName,18,true); brandSubtitle=text(api.euro?"EU / "+t("brandSubtitle"):t("brandSubtitle"),11,false); brandSubtitle.setTextColor(0xff61718b);
         brand.addView(content,new LinearLayout.LayoutParams(0,-2,1)); outer.addView(brand);
         if (api.euro) {
             languagePicker=new Spinner(this); languagePicker.setContentDescription(t("language"));

@@ -1,7 +1,7 @@
 # EURO Android APK
 
-EURO is a separate application: `eu.veloxion.app`, `Veloxion AI Europe`,
-`https://veloxion.eu/lk`. It can be installed alongside RUS. The Java namespace
+EURO is a separate application: `eu.veloxion.app`, `VeloxionAI`,
+`https://veloxion.ai/lk`. It can be installed alongside RUS. The Java namespace
 remains shared, but the application ID, label, Firebase client and offline
 screen are selected by region. No iOS files are modified.
 

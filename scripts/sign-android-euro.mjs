@@ -18,7 +18,7 @@ try {
   const version = /package: name='eu.veloxion.app' versionCode='(\d+)' versionName='([A-Za-z0-9._-]+)'/.exec(badge);
   if (!version || Number(version[1]) < 1) throw new Error('APK identity/version does not match EURO.');
   const config = JSON.parse(readFileSync(join(root, 'android/app/src/main/assets/capacitor.config.json'), 'utf8'));
-  if (config.appId !== 'eu.veloxion.app' || config.server?.url !== 'https://veloxion.eu/lk') throw new Error('Wrong regional Capacitor configuration.');
+  if (config.appId !== 'eu.veloxion.app' || config.server?.url !== 'https://veloxion.ai/lk') throw new Error('Wrong regional Capacitor configuration.');
   mkdirSync(privateDir, { recursive: true, mode: 0o700 });
   const user = run('whoami.exe', []).trim();
   run('icacls.exe', [privateDir, '/inheritance:r', '/grant:r', `${user}:(OI)(CI)F`, '*S-1-5-18:(OI)(CI)F']);

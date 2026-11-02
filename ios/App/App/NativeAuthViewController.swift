@@ -118,11 +118,12 @@ import AuthenticationServices
             outer.centerXAnchor.constraint(equalTo: scroll.frameLayoutGuide.centerXAnchor), outer.widthAnchor.constraint(lessThanOrEqualToConstant: 520), width
         ])
         let brand = UIStackView(); brand.axis = .horizontal; brand.spacing = 12; brand.alignment = .center
-        let logo = UIImageView(); logo.contentMode = .scaleAspectFit; logo.accessibilityLabel = "Veloxion AI"
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "Veloxion AI"
+        let logo = UIImageView(); logo.contentMode = .scaleAspectFit; logo.accessibilityLabel = appName
         if let url = Bundle.main.url(forResource: "veloxion-logo", withExtension: "png", subdirectory: "public") { logo.image = UIImage(contentsOfFile: url.path) }
         NSLayoutConstraint.activate([logo.widthAnchor.constraint(equalToConstant: 48), logo.heightAnchor.constraint(equalToConstant: 48)])
         let brandText = UIStackView(); brandText.axis = .vertical; brandText.spacing = 4
-        brandText.addArrangedSubview(label("Veloxion AI", size: 19, bold: true))
+        brandText.addArrangedSubview(label(appName, size: 19, bold: true))
         configureLabel(brandSubtitle, size: 11, muted: true); brandSubtitle.text = (api.region.euro ? "EU / " : "") + t("brandSubtitle")
         brandText.addArrangedSubview(brandSubtitle)
         brand.addArrangedSubview(logo); brand.addArrangedSubview(brandText); outer.addArrangedSubview(brand)

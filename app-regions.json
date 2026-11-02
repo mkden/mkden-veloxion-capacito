@@ -7,8 +7,8 @@
   },
   "euro": {
     "appId": "eu.veloxion.app",
-    "appName": "Veloxion AI Europe",
-    "url": "https://veloxion.eu/lk",
-    "allowNavigation": ["veloxion.eu", "www.veloxion.eu", "api.veloxion.eu"]
+    "appName": "VeloxionAI",
+    "url": "https://veloxion.ai/lk",
+    "allowNavigation": ["veloxion.ai", "www.veloxion.ai"]
   }
 }

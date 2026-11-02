@@ -27,7 +27,7 @@ test('native methods are registered alongside existing payment and push integrat
 
 test('each native region uses its own trusted site/API and rejects unknown bundle IDs', () => {
   for (const source of [java('NativeAuthApi'), read('ios/App/App/NativeAuthSession.swift')]) {
-    for (const marker of ['io.veloxion.app', 'eu.veloxion.app', 'https://api.veloxion.io/api', 'https://veloxion.eu']) assert.ok(source.includes(marker));
+    for (const marker of ['io.veloxion.app', 'eu.veloxion.app', 'https://api.veloxion.io/api', 'https://veloxion.ai']) assert.ok(source.includes(marker));
     assert.match(source, /Unknown app(?:lication)? region/);
   }
   assert.match(java('NativeAuthPlugin'), /getPort\(\)==-1 \|\| uri.getPort\(\)==443/);

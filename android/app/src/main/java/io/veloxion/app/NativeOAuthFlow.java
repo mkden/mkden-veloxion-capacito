@@ -41,7 +41,7 @@ public final class NativeOAuthFlow {
     }
     public URI browserCheck(String raw) throws Exception {
         URI url=new URI(raw);
-        String host=scheme.equals("eu.veloxion.app")?"veloxion.eu":"api.veloxion.io";
+        String host=scheme.equals("eu.veloxion.app")?"veloxion.ai":"api.veloxion.io";
         if (!"https".equals(url.getScheme()) || !host.equals(url.getHost()) || !"/api/auth/native/browser-check".equals(url.getPath())
             || url.getUserInfo()!=null || url.getPort()!=-1 || url.getFragment()!=null || url.getRawQuery()==null
             || !url.getRawQuery().matches("state=native_[A-Za-z0-9_-]{43}")) throw new IllegalArgumentException("Invalid browser check URL");

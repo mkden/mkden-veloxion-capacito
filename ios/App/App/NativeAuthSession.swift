@@ -14,14 +14,14 @@ struct NativeAuthRegion {
     init(bundleIdentifier: String? = Bundle.main.bundleIdentifier) {
         switch bundleIdentifier {
         case "io.veloxion.app": euro = false; origin = "https://veloxion.io"; api = "https://api.veloxion.io/api"
-        case "eu.veloxion.app": euro = true; origin = "https://veloxion.eu"; api = "https://veloxion.eu/api"
+        case "eu.veloxion.app": euro = true; origin = "https://veloxion.ai"; api = "https://veloxion.ai/api"
         default: preconditionFailure("Unknown application region")
         }
     }
     func trusts(_ url: URL?) -> Bool {
         guard let url = url, url.scheme == "https", let host = url.host,
               url.port == nil || url.port == 443 else { return false }
-        let expected = euro ? "veloxion.eu" : "veloxion.io"
+        let expected = euro ? "veloxion.ai" : "veloxion.io"
         return host == expected || host == "www." + expected
     }
 }

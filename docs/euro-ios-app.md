@@ -6,9 +6,10 @@ payment is migrated or deleted.
 
 | Field | EURO value |
 | --- | --- |
-| Display name | Veloxion AI Europe |
+| Display name | VeloxionAI |
 | Bundle ID | eu.veloxion.app |
-| Website | https://veloxion.eu/lk |
+| Website | https://veloxion.ai/lk |
+| Native API | https://veloxion.ai/api |
 | App Store SKU | veloxion-eu-ios |
 | Suggested primary language | English (U.S.) |
 

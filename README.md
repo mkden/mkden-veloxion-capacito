@@ -27,8 +27,9 @@ Capacitor-оболочка личного кабинета Veloxion AI для An
 
 ## Отдельное приложение EURO
 
-Конфигурация `euro`: `Veloxion AI Europe`, Bundle ID `eu.veloxion.app`,
-сайт `https://veloxion.eu/lk`. По умолчанию по-прежнему собирается RUS.
+Конфигурация `euro`: `VeloxionAI`, Bundle ID `eu.veloxion.app`,
+сайт `https://veloxion.ai/lk`, API `https://veloxion.ai/api`.
+По умолчанию по-прежнему собирается RUS.
 Отдельные workflows `ios-euro-bootstrap` и `ios-euro-validation` не публикуют
 приложение автоматически. Для загрузки IPA добавлены `ios-euro-testflight`
 и `ios-rus-testflight`; модерация App Store отделена от загрузки.

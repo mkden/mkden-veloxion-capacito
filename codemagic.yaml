@@ -137,7 +137,7 @@ workflows:
     artifacts:
       - build/euro-bootstrap/*.json
   ios-euro-validation:
-    name: Veloxion AI Europe - Signed Validation (No Publishing)
+    name: VeloxionAI - Signed Validation (No Publishing)
     max_build_duration: 120
     instance_type: mac_mini_m2
     integrations:

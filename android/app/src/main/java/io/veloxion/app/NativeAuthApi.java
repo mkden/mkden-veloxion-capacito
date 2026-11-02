@@ -15,7 +15,7 @@ class NativeAuthApi {
     NativeAuthApi(Context context) {
         euro = context.getPackageName().equals("eu.veloxion.app");
         if (!euro && !context.getPackageName().equals("io.veloxion.app")) throw new IllegalStateException("Unknown app region");
-        origin = euro ? "https://veloxion.eu" : "https://veloxion.io";
+        origin = euro ? "https://veloxion.ai" : "https://veloxion.io";
         api = euro ? origin + "/api" : "https://api.veloxion.io/api";
     }
 

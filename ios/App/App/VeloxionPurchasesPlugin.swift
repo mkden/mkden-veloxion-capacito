@@ -20,7 +20,7 @@ public class VeloxionPurchasesPlugin: CAPPlugin, CAPBridgedPlugin {
     private var trustedHosts: Set<String> {
         switch Bundle.main.bundleIdentifier {
         case "io.veloxion.app": return ["veloxion.io", "www.veloxion.io"]
-        case "eu.veloxion.app": return ["veloxion.eu", "www.veloxion.eu"]
+        case "eu.veloxion.app": return ["veloxion.ai", "www.veloxion.ai"]
         default: return []
         }
     }

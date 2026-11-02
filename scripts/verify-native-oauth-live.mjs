@@ -3,7 +3,7 @@ import { randomBytes, createHash } from 'node:crypto';
 
 // Public smoke checks: no provider token exchange, accounts, credentials or paid requests.
 for (const [region, api, provider, bundle, host] of [
-  ['euro', 'https://veloxion.eu/api', 'google', 'eu.veloxion.app', 'accounts.google.com'],
+  ['euro', 'https://veloxion.ai/api', 'google', 'eu.veloxion.app', 'accounts.google.com'],
   ['rus', 'https://api.veloxion.io/api', 'yandex', 'io.veloxion.app', 'oauth.yandex.ru'],
 ]) {
   const request = (path, body) => fetch(api + path, { method: body ? 'POST' : 'GET', redirect: 'manual',
@@ -17,7 +17,10 @@ for (const [region, api, provider, bundle, host] of [
   const authorization = new URL(envelope.data.authorizationUrl);
   assert.equal(authorization.protocol, 'https:'); assert.equal(authorization.hostname, host);
   const callback = new URL(authorization.searchParams.get('redirect_uri'));
-  assert.equal(callback.origin, new URL(api).origin);
+  // Provider callbacks are registered on the server, separately from the native API.
+  const callbackOrigins = region === 'euro' ? ['https://veloxion.ai', 'https://veloxion.eu'] : [new URL(api).origin];
+  assert.ok(callbackOrigins.includes(callback.origin));
+  if (envelope.data.browserCheckUrl) assert.equal(new URL(envelope.data.browserCheckUrl).origin, new URL(api).origin);
   callback.searchParams.set('state', authorization.searchParams.get('state'));
   callback.searchParams.set('error', 'access_denied');
   const cancelled = await fetch(callback, { redirect: 'manual', signal: AbortSignal.timeout(20000) });

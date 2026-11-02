@@ -9,7 +9,8 @@ const source = () => ({ project: read('ios/App/App.xcodeproj/project.pbxproj'), 
 
 test('EURO and RUS have distinct Bundle IDs and isolated website hosts', () => {
   assert.equal(REGIONS.euro.appId, 'eu.veloxion.app');
-  assert.equal(REGIONS.euro.url, 'https://veloxion.eu/lk');
+  assert.equal(REGIONS.euro.url, 'https://veloxion.ai/lk');
+  assert.deepEqual(REGIONS.euro.allowNavigation, ['veloxion.ai', 'www.veloxion.ai']);
   assert.equal(REGIONS.rus.appId, 'io.veloxion.app');
   assert.ok(REGIONS.euro.allowNavigation.every(host => !host.includes('veloxion.io')));
   assert.match(read('capacitor.config.ts'), /process.env.VELOXION_APP_REGION \|\| "rus"/);
@@ -19,7 +20,7 @@ test('build transformation sets both Xcode Bundle IDs, privacy text and offline 
   const euro = transformIOSRegion(source(), 'euro');
   assert.equal([...euro.project.matchAll(/PRODUCT_BUNDLE_IDENTIFIER = eu.veloxion.app;/g)].length, 2);
   assert.doesNotMatch(euro.project, /PRODUCT_BUNDLE_IDENTIFIER = io.veloxion.app;/);
-  assert.match(euro.plist, /<string>Veloxion AI Europe<\/string>/);
+  assert.match(euro.plist, /<key>CFBundleDisplayName<\/key>\s*<string>VeloxionAI<\/string>/);
   assert.match(euro.plist, /Veloxion uses the camera/);
   assert.match(euro.offline, /data-veloxion-region="euro"/);
   assert.deepEqual(transformIOSRegion(euro, 'euro'), euro);
@@ -36,7 +37,7 @@ test('unexpected region or project identifiers are rejected before any edits', (
 test('native purchase scope is bound to the signed Bundle ID rather than a shared website allowlist', () => {
   const swift = read('ios/App/App/VeloxionPurchasesPlugin.swift');
   assert.match(swift, /case "io.veloxion.app": return \["veloxion.io", "www.veloxion.io"\]/);
-  assert.match(swift, /case "eu.veloxion.app": return \["veloxion.eu", "www.veloxion.eu"\]/);
+  assert.match(swift, /case "eu.veloxion.app": return \["veloxion.ai", "www.veloxion.ai"\]/);
   assert.match(swift, /default: return \[\]/);
   assert.match(swift, /Bundle.main.bundleIdentifier/);
   assert.match(swift, /hasPrefix\(productPrefix\)/);
