@@ -25,7 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         DispatchQueue.main.async { [weak self] in self?.configureBridgeWebView() }
     }
 
-    private func configureBridgeWebView() {
+    func configureBridgeWebView() {
         guard let bridgeController = window?.rootViewController as? CAPBridgeViewController,
               let webView = bridgeController.webView else { return }
 
@@ -46,9 +46,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        window = UIWindow(frame: UIScreen.main.bounds)
-        showNativeAuth()
+        // The active UIWindow is created by SceneDelegate after UIKit connects a UIWindowScene.
         return true
+    }
+
+    func application(_ application: UIApplication,
+                     configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

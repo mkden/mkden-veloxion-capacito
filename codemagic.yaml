@@ -25,7 +25,7 @@ workflows:
           xcrun --sdk iphoneos --show-sdk-version
           test "$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)" -ge 27 || { echo 'iOS SDK 27+ is required'; exit 1; }
           npm ci
-          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs test/ios-landscape-scroll.test.mjs
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs test/ios-landscape-scroll.test.mjs test/ios-scene-lifecycle.test.mjs
           swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
           /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
           swiftc ios/App/App/NativeOAuthFlow.swift ios/App/App/NativeAuthLocale.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests
@@ -78,7 +78,7 @@ workflows:
           xcrun --sdk iphoneos --show-sdk-version
           test "$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)" -ge 27 || { echo 'iOS SDK 27+ is required'; exit 1; }
           npm ci
-          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs test/ios-landscape-scroll.test.mjs
+          node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs test/ios-landscape-scroll.test.mjs test/ios-scene-lifecycle.test.mjs
           swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
           /tmp/veloxion-phone-mask-tests test/native-phone-cases.json
           swiftc ios/App/App/NativeOAuthFlow.swift ios/App/App/NativeAuthLocale.swift test/NativeOAuthFlowTests.swift -o /tmp/veloxion-oauth-tests

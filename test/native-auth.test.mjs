@@ -11,7 +11,8 @@ test('native login is the launcher on both platforms; no remote view is created 
   assert.match(java('NativeAuthActivity'), /extends AppCompatActivity/);
   assert.doesNotMatch(java('NativeAuthActivity'), /new WebView|extends BridgeActivity/);
   assert.doesNotMatch(read('ios/App/App/Info.plist'), /UIMainStoryboardFile/);
-  assert.match(read('ios/App/App/AppDelegate.swift'), /window = UIWindow[\s\S]*?showNativeAuth\(\)/);
+  assert.match(read('ios/App/App/SceneDelegate.swift'), /UIWindow\(windowScene: windowScene\)[\s\S]*?appDelegate\.showNativeAuth\(\)/);
+  assert.doesNotMatch(read('ios/App/App/AppDelegate.swift'), /UIWindow\(frame: UIScreen\.main\.bounds\)/);
   assert.match(read('ios/App/App/NativeAuthViewController.swift'), /UIViewController/);
 });
 

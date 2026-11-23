@@ -18,12 +18,12 @@
     "assets": "capacitor-assets generate --iconBackgroundColor #edf5f9 --iconBackgroundColorDark #edf5f9 --splashBackgroundColor #edf5f9 --splashBackgroundColorDark #edf5f9 --logoSplashScale 0.32"
   },
   "dependencies": {
-    "@capacitor/android": "8.4.2",
+    "@capacitor/android": "8.5.2",
     "@capacitor/app": "8.0.0",
     "@capacitor/browser": "8.0.0",
     "@capacitor/camera": "^8.0.0",
-    "@capacitor/core": "8.4.2",
-    "@capacitor/ios": "8.4.2",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/ios": "8.5.2",
     "@capacitor/keyboard": "8.0.0",
     "@capacitor/push-notifications": "8.0.0",
     "@capacitor/splash-screen": "8.0.0",
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@capacitor/assets": "3.0.5",
-    "@capacitor/cli": "8.4.2",
+    "@capacitor/cli": "8.5.2",
     "typescript": "5.9.3"
   },
   "engines": {
