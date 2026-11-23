@@ -6,6 +6,7 @@ workflows:
     integrations:
       app_store_connect: veloxion-appstore
     environment:
+      xcode: 27.2
       node: 22
       groups:
         - veloxion_testflight_20261024_v2
@@ -20,6 +21,9 @@ workflows:
     scripts:
       - name: Install, test and prepare EURO
         script: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          test "$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)" -ge 27 || { echo 'iOS SDK 27+ is required'; exit 1; }
           npm ci
           node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs test/ios-landscape-scroll.test.mjs
           swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests
@@ -57,6 +61,7 @@ workflows:
     integrations:
       app_store_connect: veloxion-appstore
     environment:
+      xcode: 27.2
       node: 22
       groups:
         - veloxion_testflight_20261024_v2
@@ -69,6 +74,9 @@ workflows:
     scripts:
       - name: Install, test and prepare RUS
         script: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          test "$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)" -ge 27 || { echo 'iOS SDK 27+ is required'; exit 1; }
           npm ci
           node --test test/apple-iap.test.mjs test/app-store-setup.test.mjs test/ios-regions.test.mjs test/app-store-signing.test.mjs test/testflight.test.mjs test/native-auth.test.mjs test/native-auth-ui.test.mjs test/native-oauth.test.mjs test/native-locales.test.mjs test/ios-landscape-scroll.test.mjs
           swiftc ios/App/App/NativePhoneMask.swift test/NativePhoneMaskTests.swift -o /tmp/veloxion-phone-mask-tests

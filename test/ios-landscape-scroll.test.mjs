@@ -33,6 +33,8 @@ test('EURO TestFlight loads shared certificate and installs separate EURO profil
     const block = yaml.split('  ios-' + region + '-testflight:')[1]?.split('\n  ios-')[0] ?? '';
     assert.ok(block, region);
     assert.ok(block.includes('VELOXION_APP_REGION: ' + region), region);
+    assert.ok(block.includes('xcode: 27.2'), 'Xcode 27.2 required for ' + region);
+    assert.ok(block.includes('iOS SDK 27+ is required'), 'SDK preflight required for ' + region);
     // Codemagic imports the shared team certificate using existing RUS setup.
     // Region-specific provisioning is explicitly installed before IPA export.
     assert.ok(block.includes('bundle_identifier: io.veloxion.app'), region);
