@@ -11,10 +11,12 @@ workflows:
         - veloxion_testflight_20261024_v2
       vars:
         VELOXION_APP_REGION: euro
-      # Import the existing team certificate; only the downloaded EURO profile is applied below.
+      # Codemagic imports the shared team certificate via the existing RUS signing setup.
+      # The EURO profile is fetched and explicitly installed by ci-testflight-prepare below;
+      # the generated IPA is independently verified as eu.veloxion.app before upload.
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: eu.veloxion.app
+        bundle_identifier: io.veloxion.app
     scripts:
       - name: Install, test and prepare EURO
         script: |

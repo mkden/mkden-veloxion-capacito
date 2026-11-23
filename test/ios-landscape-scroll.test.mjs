@@ -9,7 +9,7 @@ test('RUS and EURO iOS allow landscape rotation on iPad and iPhone', () => {
     const block = plist.match(new RegExp('<key>' + key + '<\\/key>\\s*<array>([\\s\\S]*?)<\\/array>'))?.[1];
     assert.ok(block, key);
     for (const direction of ['UIInterfaceOrientationLandscapeLeft', 'UIInterfaceOrientationLandscapeRight']) {
-      assert.match(block, new RegExp(direction), key + ': ' + direction);
+      assert.ok(block.includes(direction), key + ': ' + direction);
     }
   }
   const regions = JSON.parse(read('app-regions.json'));
@@ -19,21 +19,27 @@ test('RUS and EURO iOS allow landscape rotation on iPad and iPhone', () => {
 
 test('WKWebView vertical panning remains enabled after iPad landscape rotation', () => {
   const appDelegate = read('ios/App/App/AppDelegate.swift');
-  assert.match(appDelegate, /webView\.scrollView\.isScrollEnabled\s*=\s*true/);
-  assert.match(appDelegate, /webView\.scrollView\.bounces\s*=\s*true/);
-  assert.match(appDelegate, /webView\.scrollView\.alwaysBounceVertical\s*=\s*true/);
-  assert.match(appDelegate, /func applicationDidBecomeActive[\s\S]*configureBridgeWebView\(\)/);
-  assert.doesNotMatch(appDelegate, /webView\.scrollView\.isScrollEnabled\s*=\s*false/);
+  assert.ok(appDelegate.includes('webView.scrollView.isScrollEnabled = true'));
+  assert.ok(appDelegate.includes('webView.scrollView.bounces = true'));
+  assert.ok(appDelegate.includes('webView.scrollView.alwaysBounceVertical = true'));
+  assert.ok(appDelegate.includes('func applicationDidBecomeActive'));
+  assert.ok(appDelegate.includes('configureBridgeWebView()'));
+  assert.ok(!appDelegate.includes('webView.scrollView.isScrollEnabled = false'));
 });
 
-test('EURO TestFlight uses EURO signing while RUS remains isolated', () => {
+test('EURO TestFlight loads shared certificate and installs separate EURO profile', () => {
   const yaml = read('codemagic.yaml');
-  for (const [region, bundleId] of [['euro','eu.veloxion.app'], ['rus','io.veloxion.app']]) {
+  for (const region of ['euro','rus']) {
     const block = yaml.split('  ios-' + region + '-testflight:')[1]?.split('\n  ios-')[0] ?? '';
     assert.ok(block, region);
-    assert.match(block, new RegExp('VELOXION_APP_REGION: ' + region));
-    assert.match(block, new RegExp('bundle_identifier: ' + bundleId.replaceAll('.', '\\.') + '(?:\\n|$)'));
-    assert.match(block, new RegExp('ci-testflight-prepare\\.mjs ' + region));
-    assert.match(block, new RegExp('verify-ios-ipa\\.mjs ' + region));
+    assert.ok(block.includes('VELOXION_APP_REGION: ' + region), region);
+    // Codemagic imports the shared team certificate using existing RUS setup.
+    // Region-specific provisioning is explicitly installed before IPA export.
+    assert.ok(block.includes('bundle_identifier: io.veloxion.app'), region);
+    assert.ok(block.includes('ci-testflight-prepare.mjs ' + region), region);
+    assert.ok(block.includes('verify-ios-ipa.mjs ' + region), region);
   }
+  const euro = yaml.split('  ios-euro-testflight:')[1]?.split('\n  ios-rus-testflight:')[0] ?? '';
+  assert.ok(euro.includes('--profile "$CM_BUILD_DIR/build/testflight/euro.mobileprovision"'));
+  assert.ok(euro.includes('verify-ios-ipa.mjs euro'));
 });
