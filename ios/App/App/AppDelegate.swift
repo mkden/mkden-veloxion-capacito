@@ -30,8 +30,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
               let webView = bridgeController.webView else { return }
 
         webView.allowsBackForwardNavigationGestures = false
-        webView.scrollView.bounces = false
-        webView.scrollView.alwaysBounceVertical = false
+        // Keep the root WKWebView scrollable after iPad landscape rotations.
+        // The responsive website controls its own overflow, but iOS must not
+        // disable vertical pan/bounce at the native scroll-view layer.
+        webView.scrollView.isScrollEnabled = true
+        webView.scrollView.bounces = true
+        webView.scrollView.alwaysBounceVertical = true
         webView.scrollView.alwaysBounceHorizontal = false
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.contentInset = .zero
